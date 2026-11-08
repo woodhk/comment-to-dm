@@ -56,6 +56,17 @@ def test_login_failure_is_refused(stub):
         sender().send("s@x.com", "s", "b")
 
 
+def test_only_auth_errors_are_login_refused(stub):
+    stub.fail_login = smtplib.SMTPAuthenticationError(535, b"bad")
+    with pytest.raises(mailer.MailLoginRefused):
+        sender().check_login()
+    stub.fail_login = smtplib.SMTPServerDisconnected("gone")
+    with pytest.raises(MailRefused) as e:
+        sender().send("s@x.com", "s", "b")
+    assert not isinstance(e.value, mailer.MailLoginRefused)
+    assert stub.sent == []
+
+
 def test_recipient_refused_is_refused(stub):
     stub.fail_send = smtplib.SMTPRecipientsRefused({"s@x.com": (550, b"no")})
     with pytest.raises(MailRefused):

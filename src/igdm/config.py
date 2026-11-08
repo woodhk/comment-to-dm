@@ -8,6 +8,7 @@ from pathlib import Path
 from typing import Literal
 from zoneinfo import ZoneInfo
 
+from igdm.milestones import MilestonesConfig, parse_milestones
 from igdm.routes import BUILTINS
 
 CONFIG_VERSION = 2  # bump when a setting is renamed, removed or newly required; add a step in upgrade.py
@@ -153,6 +154,7 @@ class Config:
     prices: dict[str, Price] = field(default_factory=dict)
     email_threshold: float = 0.5  # below this chance of being real, a typed address is flagged
     jev_fallback_model: str = "gpt-6-luna"  # the OpenAI model that spots requests without a Jev key
+    milestones: MilestonesConfig = MilestonesConfig()  # the dashboard's Milestones page
 
 
 def _need(d: dict, key: str, where: str):
@@ -422,4 +424,5 @@ def load_config(path: Path) -> Config:
         prices={model: Price(float(p.get("per_call", 0)), float(p.get("per_m_input", 0)),
                              float(p.get("per_m_output", 0)))
                 for model, p in raw.get("prices", {}).items()},
+        milestones=parse_milestones(raw.get("milestones")),
     )

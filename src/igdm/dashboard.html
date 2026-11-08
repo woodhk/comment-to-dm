@@ -314,6 +314,53 @@
     .head h1 { font-size: 26px; }
     .stat .value { font-size: 38px; }
   }
+  /* Milestones tab: follower goals as cards with a bar to the next one, then this week's posts
+     against the badge levels, the badges themselves, and a strip of recent weeks. */
+  .mgrid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; }
+  .mcard { background: var(--row); border-radius: 14px; padding: 16px 18px; display: flex; flex-direction: column; gap: 8px; min-width: 0; }
+  .mcard .mnum { font: 600 28px/1 var(--display); letter-spacing: -0.02em; }
+  .mcard .msub { font-size: 13.5px; color: var(--ink-2); }
+  .mcard.won { background: var(--t-mint); color: var(--t-mint-ink); }
+  .mcard.won .msub { color: inherit; opacity: .85; }
+  .mcard.next { background: var(--box); border: 1px solid var(--box-line); box-shadow: 0 1px 2px var(--shadow); }
+  .mcard.locked { opacity: .6; }
+  .mtop { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+  .bar { height: 8px; background: var(--bar); border-radius: 99px; overflow: hidden; }
+  .bar i { display: block; height: 100%; background: var(--accent); border-radius: 99px; }
+  .mcard.won .bar i { background: var(--good); }
+  .wk { display: flex; flex-direction: column; gap: 10px; }
+  .wkbar { position: relative; height: 14px; background: var(--bar); border-radius: 99px; margin: 22px 0 6px; }
+  .wkbar > i { position: absolute; inset: 0 auto 0 0; background: var(--accent); border-radius: 99px; }
+  .wkbar .tick { position: absolute; top: -24px; transform: translateX(-50%); font-size: 12px; color: var(--ink-2);
+                 white-space: nowrap; text-align: center; }
+  .wkbar .tick::after { content: ""; position: absolute; left: 50%; top: 20px; width: 2px; height: 18px; background: var(--panel); }
+  .wkbar .tick.hit { color: var(--ink); font-weight: 600; }
+  .bgrid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; }
+  .bcard { background: var(--row); border-radius: 14px; padding: 16px 18px; display: flex; gap: 14px; align-items: center; min-width: 0; }
+  .bcard .bemo { width: 52px; height: 52px; display: grid; place-items: center; border-radius: 50%; flex: none; }
+  .bcard .bemo svg { width: 26px; height: 26px; }
+  .bcard.none .bemo { background: var(--panel); color: var(--muted); }
+  .bcard b { display: block; font-size: 15.5px; }
+  .bcard .msub { font-size: 13.5px; color: var(--ink-2); }
+  .bcard .times { margin-left: auto; font: 600 20px var(--display); white-space: nowrap; }
+  .weeks { display: grid; grid-template-columns: repeat(12, minmax(0, 1fr)); gap: 8px; align-items: end; }
+  .wcol { display: flex; flex-direction: column; align-items: center; gap: 6px; min-width: 0; }
+  .wcol .wbar { width: 100%; max-width: 34px; background: var(--bar); border-radius: 6px 6px 3px 3px; min-height: 3px; }
+  .wcol .wbar.hit { background: var(--accent); }
+  .wcol .wn { font-size: 13px; font-weight: 600; }
+  .wcol .wd { font-size: 11.5px; color: var(--muted); white-space: nowrap; }
+  .wcol .we { width: 24px; height: 24px; border-radius: 50%; display: grid; place-items: center; }
+  .wcol .we:empty { background: none; }
+  .wcol .we svg { width: 14px; height: 14px; }
+  .mcheck svg { width: 18px; height: 18px; display: block; }
+  .wkbar .tick { display: inline-flex; align-items: center; gap: 3px; }
+  .wkbar .tick svg { width: 14px; height: 14px; }
+  @media (max-width: 960px) { .mgrid, .bgrid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+  @media (max-width: 520px) {
+    .mgrid, .bgrid { grid-template-columns: minmax(0, 1fr); }
+    .weeks { gap: 4px; grid-template-columns: repeat(6, minmax(0, 1fr)) !important; }
+    .wcol:nth-last-child(n+7) { display: none; }  /* the last six weeks fit a phone */
+  }
 </style>
 </head>
 <body>
@@ -334,6 +381,10 @@
     <a class="nav" href="#activity" data-name="Activity">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12h4l3-8 4 16 3-8h4"/></svg>
       <span>Activity</span>
+    </a>
+    <a class="nav" href="#milestones" data-name="Milestones">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M8 21h8M12 17v4"/><path d="M7 4h10v5a5 5 0 0 1-10 0z"/><path d="M7 6H4.5a2.5 2.5 0 0 0 2.6 4M17 6h2.5a2.5 2.5 0 0 1-2.6 4"/></svg>
+      <span>Milestones</span>
     </a>
   </div>
 </nav>
@@ -391,6 +442,7 @@
   </section>
 </div>
 <div class="page" id="view-reels" hidden></div>
+<div class="page" id="view-milestones" hidden></div>
 <div id="manual-back" hidden></div>
 <aside id="manual" role="dialog" aria-modal="true" aria-labelledby="manual-h" hidden>
   <div class="mh"><h2 id="manual-h">Send material by hand</h2>
@@ -1185,6 +1237,100 @@ $("m-reel").addEventListener("change", manualPreview);
 $("manual-form").addEventListener("submit", (e) => { e.preventDefault(); manual.force = false; manualSend(); });
 $("m-dup").addEventListener("click", (e) => { if (e.target.id === "m-again") { manual.force = true; manualSend(); } });
 
+// ---- milestones tab
+const compact = (n) => n >= 1000 ? (n % 1000 ? (n / 1000).toFixed(1).replace(/\.0$/, "") : n / 1000) + "k" : String(n);
+const longDay = (iso) => new Date(iso).toLocaleDateString([], {day: "numeric", month: "short", year: "numeric"});
+const milestonesOpen = () => !$("view-milestones").hidden;
+const SVG = (d) => `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${d}</svg>`;
+const BADGE_ICON = {
+  flame: SVG('<path d="M12 3c.5 3.5 5 5.5 5 10.5a5 5 0 0 1-10 0c0-2.2 1-3.7 2.2-4.8.2 1.6 1 2.6 2.1 3C11 9 10.6 5.6 12 3z"/>'),
+  bolt: SVG('<path d="M13 2 4.5 13.5H12L11 22l8.5-11.5H12z"/>'),
+  rocket: SVG('<path d="M14.5 4.5c2.5-1.3 4.8-1.5 5.5-1.5 0 .7-.2 3-1.5 5.5L12 15l-3-3z"/><path d="M9 12 5.5 11 8 8h4M12 15l1 3.5 3-2.5v-4"/><path d="M6.5 16.5c-1.5.5-2.5 2-2.5 3.5 1.5 0 3-1 3.5-2.5"/>'),
+  star: SVG('<path d="m12 3 2.7 5.6 6.1.9-4.4 4.3 1 6.1L12 17l-5.4 2.9 1-6.1-4.4-4.3 6.1-.9z"/>'),
+  trophy: SVG('<path d="M8 21h8M12 17v4"/><path d="M7 4h10v5a5 5 0 0 1-10 0z"/><path d="M7 6H4.5a2.5 2.5 0 0 0 2.6 4M17 6h2.5a2.5 2.5 0 0 1-2.6 4"/>'),
+  crown: SVG('<path d="M3 8l4.5 4L12 5l4.5 7L21 8l-2 11H5z"/>'),
+  medal: SVG('<circle cx="12" cy="15" r="5"/><path d="M8.5 11 6 3h4l2 5 2-5h4l-2.5 8"/>'),
+  target: SVG('<circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="5"/><circle cx="12" cy="12" r="1"/>'),
+};
+const CHECK = SVG('<path d="m5 12.5 4.5 4.5L19 7.5"/>');
+const TINTS = ["peach", "sky", "lilac", "mint"];
+const badgeIcon = (name) => BADGE_ICON[name] || BADGE_ICON.star;
+
+async function msLoad() {
+  const v = $("view-milestones");
+  let s;
+  try {
+    const r = await fetch("/api/milestones");
+    s = await r.json();
+    if (!r.ok) throw new Error(s.error || "couldn't load milestones");
+  } catch (e) { v.innerHTML = `<div class="empty">${esc(e.message)}</div>`; return; }
+  const head = `<header class="head"><div><h1>Milestones</h1>
+      <p>Follower goals and badges for how often you post. The bot checks Instagram once an hour.</p></div>
+      ${s.synced_at ? `<div class="updated"><i></i>Checked ${esc(sinceIso(s.synced_at))}</div>` : ""}</header>`;
+  if (s.followers === null) {
+    v.innerHTML = head + `<div class="empty">No reading yet. The bot takes its first one within an hour of starting,
+      then this page fills in.</div>`;
+    return;
+  }
+  const w = s.this_week, nm = s.next_milestone;
+  const statsHtml = `<section class="stats">
+    <div class="stat sky"><div class="top"><span class="label">Followers</span></div>
+      <div class="value num">${s.followers.toLocaleString()}</div>
+      <div class="cap">${nm ? `${nm.to_go.toLocaleString()} to ${compact(nm.followers)}` : "Every milestone reached"}</div></div>
+    <div class="stat mint"><div class="top"><span class="label">Posts this week</span></div>
+      <div class="value num">${w.posts}</div>
+      <div class="cap">${w.next ? `${w.next.to_go} more for ${esc(w.next.name)}` : "Top badge this week"}</div></div>
+    <div class="stat peach"><div class="top"><span class="label">Streak</span></div>
+      <div class="value num">${s.streak}</div>
+      <div class="cap">${s.streak === 1 ? "week" : "weeks"} in a row of ${esc(s.streak_badge)}</div></div>
+    <div class="stat lilac"><div class="top"><span class="label">Best streak</span></div>
+      <div class="value num">${s.best_streak}</div>
+      <div class="cap">${s.total_posts.toLocaleString()} posts counted</div></div>
+  </section>`;
+  const cards = s.milestones.map((m) => {
+    const isNext = nm && m.followers === nm.followers;
+    const cls = m.earned ? "won" : isNext ? "next" : "locked";
+    const sub = m.earned ? (m.reached_at ? `Reached ${esc(longDay(m.reached_at))}` : "Reached before tracking started")
+      : isNext ? `${nm.to_go.toLocaleString()} to go` : "Locked";
+    return `<div class="mcard ${cls}"><div class="mtop"><span class="mnum num">${compact(m.followers)}</span>
+      <span class="mcheck">${m.earned ? CHECK : ""}</span></div>
+      <div class="bar"><i style="width:${Math.round(m.progress * 100)}%"></i></div>
+      <div class="msub">${sub}</div></div>`;
+  }).join("");
+  const top = Math.max(s.badges[s.badges.length - 1].posts + 1, w.posts);  // +1: room for the last label
+  const ticks = s.badges.map((b) => `<span class="tick${w.posts >= b.posts ? " hit" : ""}"
+      style="left:${(b.posts / top) * 100}%">${badgeIcon(b.icon)}${b.posts}</span>`).join("");
+  const left = w.days_left === 0 ? "Last day of the week" : `${w.days_left} ${w.days_left === 1 ? "day" : "days"} left`;
+  const weekHtml = `<section class="sec box outline"><div class="sech"><div><h2>This week</h2>
+      <p>Monday to Sunday. ${left}.</p></div></div>
+    <div class="wk"><div class="wkbar"><i style="width:${Math.min(100, (w.posts / top) * 100)}%"></i>${ticks}</div>
+      <div class="msub">${w.badge ? `You've earned <b>${esc(w.badge)}</b> this week.` : "No badge yet this week."}
+        ${w.next ? `Post ${w.next.to_go} more for ${esc(w.next.name)}.` : ""}</div></div></section>`;
+  const tint = Object.fromEntries(s.badges.map((b, i) => [b.name, TINTS[i % TINTS.length]]));
+  const badgeHtml = s.badges.map((b) => `<div class="bcard${b.times ? "" : " none"}">
+      <span class="bemo ${tint[b.name]}">${badgeIcon(b.icon)}</span>
+      <div><b>${esc(b.name)}</b><span class="msub">${b.posts} posts in a week<br>${b.last_week
+        ? `Last: week of ${esc(day(b.last_week))}` : "Not earned yet"}</span></div>
+      <span class="times num">×${b.times}</span></div>`).join("");
+  const maxN = Math.max(1, ...s.recent.map((r) => r.posts));
+  const low = s.badges[0].posts;
+  const weeksHtml = s.recent.map((r) => `<div class="wcol" title="Week of ${esc(day(r.week_start))}: ${r.posts} posts">
+      <span class="we ${r.badge ? tint[r.badge] : ""}">${r.badge ? badgeIcon(r.icon) : ""}</span><span class="wn num">${r.posts}</span>
+      <div class="wbar${r.posts >= low ? " hit" : ""}" style="height:${Math.round((r.posts / maxN) * 90) + 3}px"></div>
+      <span class="wd">${esc(day(r.week_start))}</span></div>`).join("");
+  v.innerHTML = head + statsHtml + `
+    <section class="sec"><div class="sech"><div><h2>Follower milestones</h2>
+      <p>Once reached, a milestone stays earned.</p></div></div><div class="mgrid">${cards}</div></section>
+    ${weekHtml}
+    <section class="sec"><div class="sech"><div><h2>Posting badges</h2>
+      <p>Earned each week you post enough. The number is how many weeks you've earned it.</p></div></div>
+      <div class="bgrid">${badgeHtml}</div></section>
+    <section class="sec box outline"><div class="sech"><div><h2>Recent weeks</h2>
+      <p>Posts each week, with the best badge it earned.</p></div></div>
+      <div class="weeks" style="grid-template-columns:repeat(${s.recent.length}, minmax(0, 1fr))">${weeksHtml}</div></section>`;
+}
+setInterval(() => { if (milestonesOpen()) msLoad(); }, 60000);
+
 // ---- sidebar and views
 const NARROW = window.matchMedia("(max-width: 720px)");
 function sideOpen(open, save) {
@@ -1202,11 +1348,14 @@ document.querySelectorAll("#side .nav").forEach((a) => a.addEventListener("click
 
 function route() {
   const h = location.hash.slice(1) || "overview";
-  const view = h === "reels" || h.startsWith("reels/") ? "reels" : h === "activity" ? "activity" : "overview";
+  const view = h === "reels" || h.startsWith("reels/") ? "reels" : h === "activity" ? "activity"
+    : h === "milestones" ? "milestones" : "overview";
   $("view-overview").hidden = view !== "overview";
   $("view-reels").hidden = view !== "reels";
   $("view-activity").hidden = view !== "activity";
+  $("view-milestones").hidden = view !== "milestones";
   if (view === "activity") actLoad(false);
+  if (view === "milestones") msLoad();
   document.querySelectorAll("#side .nav").forEach((a) => {
     if (a.getAttribute("href") === "#" + view) a.setAttribute("aria-current", "page");
     else a.removeAttribute("aria-current");

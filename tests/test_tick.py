@@ -35,7 +35,7 @@ def test_tick_isolates_phase_failures():
     assert result["ingest"].startswith("error: ")
     assert "boom" in result["ingest"]
     assert calls  # process_replies still ran
-    assert set(result) == {"pauses", "ingest", "dm", "hand_dms", "replies", "followups", "gotits", "email"}
+    assert set(result) == {"pauses", "ingest", "dm", "hand_dms", "replies", "followups", "gotits", "email", "milestones"}
 
 
 def test_tick_phase_order(monkeypatch):

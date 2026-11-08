@@ -16,6 +16,10 @@ class MailRefused(Exception):
     """Nothing went out (connect/login failed, or the server refused it). Safe to retry."""
 
 
+class MailLoginRefused(MailRefused):
+    """Gmail was reached but did not accept the address and app password."""
+
+
 class MailMaybeSent(Exception):
     """The send started but no clear answer came back. Never retry it."""
 
@@ -61,17 +65,31 @@ class GmailSender:
             raise
         return smtp
 
-    def send(self, to: str, subject: str, body: str) -> None:
-        msg = self._message(to, subject, body)
+    def _logged_in(self) -> smtplib.SMTP:
+        """Connect and sign in. The caller closes the connection (use it in a `with`)."""
         try:
             smtp = self._connect()
         except Exception as e:  # noqa: BLE001 - nothing was sent yet
             raise MailRefused(f"could not connect to {self._host}: {type(e).__name__}: {e}") from e
-        with smtp:
-            try:
-                smtp.login(self._address, self._password)
-            except Exception as e:  # noqa: BLE001 - nothing was sent yet
-                raise MailRefused(f"gmail login failed: {type(e).__name__}: {e}") from e
+        try:
+            smtp.login(self._address, self._password)
+        except Exception as e:  # noqa: BLE001 - nothing was sent yet
+            with smtp:  # leaves cleanly (quit)
+                pass
+            refused = MailLoginRefused if isinstance(e, smtplib.SMTPAuthenticationError) \
+                else MailRefused
+            raise refused(f"gmail login failed: {type(e).__name__}: {e}") from e
+        return smtp
+
+    def check_login(self) -> None:
+        """Sign in and sign out, sending nothing. Raises MailRefused (MailLoginRefused when
+        Gmail did not accept the password)."""
+        with self._logged_in():
+            pass
+
+    def send(self, to: str, subject: str, body: str) -> None:
+        msg = self._message(to, subject, body)
+        with self._logged_in() as smtp:
             try:
                 smtp.send_message(msg)
             except _REFUSED_DURING_SEND as e:

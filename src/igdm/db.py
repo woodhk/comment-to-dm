@@ -178,6 +178,15 @@ CREATE TABLE IF NOT EXISTS ai_usage (
     usd_override REAL,
     note TEXT NOT NULL DEFAULT ''
 );
+CREATE TABLE IF NOT EXISTS follower_counts (
+    day TEXT PRIMARY KEY,  -- local date; the last reading of the day wins
+    followers INTEGER NOT NULL,
+    at TEXT NOT NULL
+);
+CREATE TABLE IF NOT EXISTS posts (media_id TEXT PRIMARY KEY, posted_at TEXT NOT NULL);
+CREATE INDEX IF NOT EXISTS idx_posts_at ON posts(posted_at);
+-- reached_at NULL: already past it when the bot first looked, so no date
+CREATE TABLE IF NOT EXISTS milestones (followers INTEGER PRIMARY KEY, reached_at TEXT);
 """
 
 # The original owner's first name, in the values stored before upgrade 1. Spelled in two
@@ -740,3 +749,32 @@ class Database:
     def status_counts(self) -> dict[str, int]:
         rows = self._c.execute("SELECT status, COUNT(*) n FROM requests GROUP BY status").fetchall()
         return {r["status"]: r["n"] for r in rows}
+
+    # -- milestones page (igdm.milestones)
+    def record_followers(self, day: str, followers: int, at: datetime) -> None:
+        self._c.execute("INSERT OR REPLACE INTO follower_counts (day, followers, at) VALUES (?,?,?)",
+                        (day, followers, _enc(at)))
+
+    def latest_followers(self) -> int | None:
+        row = self._c.execute("SELECT followers FROM follower_counts ORDER BY at DESC LIMIT 1").fetchone()
+        return row["followers"] if row else None
+
+    def milestones_reached(self) -> dict[int, datetime | None]:
+        return {r["followers"]: _dec(r["reached_at"])
+                for r in self._c.execute("SELECT followers, reached_at FROM milestones")}
+
+    def mark_milestone(self, followers: int, at: datetime | None) -> None:
+        self._c.execute("INSERT OR IGNORE INTO milestones (followers, reached_at) VALUES (?,?)",
+                        (followers, _enc(at)))
+
+    def add_posts(self, posts) -> None:
+        """Feed posts (igdm.instagram.Media); ones without a time are skipped."""
+        self._c.executemany("INSERT OR IGNORE INTO posts (media_id, posted_at) VALUES (?,?)",
+                            [(p.id, _enc(p.posted_at)) for p in posts if p.posted_at])
+
+    def newest_post(self) -> datetime | None:
+        row = self._c.execute("SELECT MAX(posted_at) m FROM posts").fetchone()
+        return _dec(row["m"]) if row and row["m"] else None
+
+    def post_times(self) -> list[datetime]:
+        return [_dec(r["posted_at"]) for r in self._c.execute("SELECT posted_at FROM posts ORDER BY posted_at")]

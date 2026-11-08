@@ -5,6 +5,9 @@
 /scripts/server.env
 /tests/data/personal.txt
 /.setup-progress.json
+/config.test.toml
+/config.dryrun.toml
+/emails.csv
 
 # Your leads and logs
 /data/

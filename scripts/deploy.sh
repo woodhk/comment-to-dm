@@ -6,9 +6,15 @@
 # version and upgrades it, the server's [owner] section holds generic default wording, not
 # yours, so deploy stops there: nothing is restarted, it warns, and it exits non-zero. Fix
 # it with pull_config.sh, check [owner], push_config.sh, then run deploy.sh again.
+# A server whose app folder is a git clone (a creator's) is refused: scripts/update.sh updates
+# it from GitHub.
 set -euo pipefail
 . "$(dirname "${BASH_SOURCE[0]}")/_server.sh"
 cd "$PROJECT"
+if server_has_git; then  # a creator's server: its code comes from GitHub, never from this copy
+    echo "This server gets its code from GitHub. To update it, run: ssh $IGDM_SERVER 'cd $IGDM_APP_DIR && bash scripts/update.sh'"
+    exit 1
+fi
 DIRTY="$(git status --porcelain | grep -v ' config.toml$' || true)"
 if [ -n "$DIRTY" ]; then
     echo "Commit these changes first (config.toml is fine, it isn't deployed):"

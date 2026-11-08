@@ -72,3 +72,108 @@ def test_setup_accepts_a_valid_timezone(fake_env):
     assert "Unknown timezone" not in out.stdout + out.stderr
     assert "set-timezone Europe/London" in log.read_text()
     assert (tmp_path / "apt-ran").exists()
+
+
+REPO = "https://github.com/woodhk/comment-to-dm.git"
+
+
+@pytest.fixture
+def setup_fakes(fake_env):
+    """Fakes for the steps up to the app folder. The run stops soon after it, at the first
+    write into /etc, which doesn't exist on this Mac."""
+    env, tmp_path = fake_env
+    bin_dir = tmp_path / "bin"
+    log = tmp_path / "calls.log"
+    for name, body in {
+        "install": f'echo "install $*" >> {log}',
+        "adduser": f'echo "adduser $*" >> {log}',
+        "git": f'echo "git $*" >> {log}',
+        "sudo": f'echo "sudo $*" >> {log}\nshift 3\nexec "$@"',  # sudo -u igdm -H <cmd>
+    }.items():
+        (bin_dir / name).write_text("#!/bin/sh\n" + body + "\n")
+        (bin_dir / name).chmod(0o755)
+    return env, tmp_path, log
+
+
+def test_setup_installs_git():
+    assert "apt-get -y -q install sqlite3 rsync ufw unattended-upgrades curl python3 git\n" in SETUP.read_text()
+
+
+def test_setup_clones_when_given_a_repo(setup_fakes):
+    env, tmp_path, log = setup_fakes
+    run_setup(env, "Europe/London", REPO)
+    calls = log.read_text()
+    assert f"sudo -u igdm -H git clone -q {REPO} /home/igdm/app\n" in calls
+    clone = calls.index("git clone")
+    assert calls.index("install -d -o igdm -g igdm /home/igdm/app /home/igdm/app/data /home/igdm/app/logs") > clone
+
+
+def test_setup_leaves_an_existing_clone_alone(setup_fakes):
+    env, tmp_path, log = setup_fakes
+    app = tmp_path / "app"
+    (app / ".git").mkdir(parents=True)
+    (app / "README.md").write_text("mine\n")
+    run_setup({**env, "IGDM_APP_ROOT": str(app)}, "Europe/London", REPO)
+    calls = log.read_text()
+    assert "git clone" not in calls
+    assert f"install -d -o igdm -g igdm {app} {app}/data {app}/logs" in calls
+
+
+def test_setup_refuses_app_folder_without_git(setup_fakes):
+    env, tmp_path, log = setup_fakes
+    app = tmp_path / "app"
+    app.mkdir()
+    (app / "README.md").write_text("copied by hand\n")
+    out = run_setup({**env, "IGDM_APP_ROOT": str(app)}, "Europe/London", REPO)
+    assert out.returncode == 1
+    assert "The app folder already has files that didn't come from git. Not changing it." in out.stdout
+    assert "git clone" not in log.read_text()
+    assert (app / "README.md").read_text() == "copied by hand\n"
+
+
+def test_setup_without_a_repo_never_clones(setup_fakes):
+    env, tmp_path, log = setup_fakes
+    run_setup(env, "Europe/London")
+    calls = log.read_text()
+    assert "git " not in calls and "sudo" not in calls
+    assert "install -d -o igdm -g igdm /home/igdm/app /home/igdm/app/data /home/igdm/app/logs" in calls
+
+
+def test_setup_installs_packages_only_for_a_clone():
+    text = SETUP.read_text()
+    uv_install = text.index("astral.sh/uv/install.sh")
+    sync = text.index("uv sync --frozen -q")
+    services = text.index("== services")
+    assert uv_install < sync < services
+    assert 'if [ -n "$REPO" ]' in text[text.rindex("== uv", 0, sync):sync]
+
+
+def test_setup_clones_into_empty_data_and_logs_folders(setup_fakes):
+    env, tmp_path, log = setup_fakes  # left by an earlier run without the url
+    app = tmp_path / "app"
+    (app / "data").mkdir(parents=True)
+    (app / "logs").mkdir()
+    out = run_setup({**env, "IGDM_APP_ROOT": str(app)}, "Europe/London", REPO)
+    assert "didn't come from git" not in out.stdout
+    assert f"sudo -u igdm -H git clone -q {REPO} {app}\n" in log.read_text()
+
+
+def test_setup_refuses_data_with_files_in_it(setup_fakes):
+    env, tmp_path, log = setup_fakes
+    app = tmp_path / "app"
+    (app / "data").mkdir(parents=True)
+    (app / "data/igdm.sqlite").write_text("leads\n")
+    out = run_setup({**env, "IGDM_APP_ROOT": str(app)}, "Europe/London", REPO)
+    assert out.returncode == 1
+    assert "The app folder already has files that didn't come from git. Not changing it." in out.stdout
+    assert "git clone" not in log.read_text()
+    assert (app / "data/igdm.sqlite").read_text() == "leads\n"
+
+
+def test_setup_closing_lines_fit_mac_and_windows():
+    """Windows 14: a Windows creator has no move, and starts the bot with server_start.sh."""
+    text = SETUP.read_text()
+    assert 'echo "Done. Dashboard address: https://$NAME"' in text
+    assert "Only scripts/cutover.sh (Mac) or scripts/server_start.sh (Windows) starts them." in text
+    assert "after the move" not in text
+    assert "NOT started: cutover.sh or server_start.sh starts them" in text

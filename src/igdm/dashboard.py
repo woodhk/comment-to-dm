@@ -27,6 +27,7 @@ from igdm.config import Config, load_config
 from igdm.db import FOR_OWNER, Database
 from igdm.instagram import Media
 from igdm.messages import find_email
+from igdm.milestones import milestones_state
 from igdm.outbox import render_email
 from igdm.reelfile import CONFIG_LOCK, add_reel, set_paused, update_reel, write_config
 from igdm.reelform import check_reel
@@ -192,6 +193,9 @@ def _handler(live: _Live, find_media: Callable[[str], Media | None] | None,
                     raise _Refused(400, "bad limit or before") from None
                 self._json(200, activity(Database(cfg.db_path), cfg, _now(),
                                          before=before, limit=limit))
+            elif path == "/api/milestones":
+                cfg = live.get()
+                self._json(200, milestones_state(Database(cfg.db_path), cfg, _now()))
             elif path.startswith("/api/emails/"):
                 self._email_status(path.rsplit("/", 1)[1])
             elif path == "/api/reels":

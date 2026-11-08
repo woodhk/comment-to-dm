@@ -23,6 +23,12 @@ fi
 say() { printf '%s\n' "$*" 2>/dev/null || true; }
 refuse() { say "$@"; exit 1; }
 
+# 0. On Windows the bot only ever runs on the server, so there's nothing to update on this computer.
+case "$(uname -s 2>/dev/null || true)" in
+    MINGW* | MSYS*)
+        refuse "On Windows your bot runs on your server, not on this computer, so there's nothing to update here. Ask Claude to \"update my bot\" and it updates the server. Nothing was changed." ;;
+esac
+
 # 1. Only a git download can be updated this way.
 if [ ! -e .git ] || ! command -v git >/dev/null 2>&1 || ! git rev-parse --git-dir >/dev/null 2>&1; then
     refuse "Updates need the project downloaded with git. Ask Claude to set that up."

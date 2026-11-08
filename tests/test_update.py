@@ -150,6 +150,24 @@ def test_not_a_git_checkout_refuses(tmp_path, env):
     assert calls(env) == []
 
 
+@pytest.mark.parametrize("system", ["MINGW64_NT-10.0-19045", "MSYS_NT-10.0"])
+def test_windows_refuses_and_changes_nothing(repos, env, tmp_path, system):
+    """Windows 5: on Windows the bot runs on the server, so the update is done there."""
+    origin, seed, clone = repos
+    publish(seed)
+    fake = Path(env["PATH"].split(":")[0]) / "uname"
+    fake.write_text(f'#!/bin/sh\necho "{system}"\n')
+    fake.chmod(0o755)
+    before = git(clone, "rev-parse", "HEAD")
+    out = run(clone, env)
+    assert out.returncode == 1, out.text
+    assert "On Windows your bot runs on your server" in out.stdout
+    assert 'Ask Claude to "update my bot" and it updates the server. Nothing was changed.' in out.stdout
+    assert git(clone, "rev-parse", "HEAD") == before
+    assert calls(env) == []
+    assert (clone / "config.toml").read_bytes() == CONFIG
+
+
 def test_local_changes_refuse(repos, env):
     _, seed, clone = repos
     publish(seed)

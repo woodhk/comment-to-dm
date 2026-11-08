@@ -149,6 +149,7 @@ def deploy_env(tmp_path):
         'case "$*" in\n'
         '  *"igdm upgrade"*) printf "%s\\n" "$UPGRADE_OUT" ;;\n'
         '  *is-active*) echo active; echo active ;;\n'
+        '  *"test -e .git"*) echo no ;;\n'  # a server without git, like Alex's
         'esac\n')
     (bin_dir / "rsync").write_text('#!/bin/sh\necho "rsync $*" >> "$CALLS"\n')
     for f in bin_dir.iterdir():

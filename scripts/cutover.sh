@@ -24,11 +24,28 @@ trap on_fail ERR
 
 say "1. checks"
 [ "$(git branch --show-current)" = main ] || { echo "Run this on main."; exit 1; }
-[ -z "$(git status --porcelain)" ] || { echo "Commit or discard local changes first."; git status --short; exit 1; }
+# Only changes to tracked files count. Files git doesn't track (an emails export, a leftover test
+# settings copy) never reach the server, so they don't block the move.
+[ -z "$(git status --porcelain --untracked-files=no)" ] || { echo "Commit or discard local changes first."; git status --short --untracked-files=no; exit 1; }
 [ -f deploy/igdm.service ] || { echo "The server work isn't merged into main yet."; exit 1; }
 [ ! -f data/MOVED_TO_SERVER ] || { echo "Already moved ($(cat data/MOVED_TO_SERVER))."; exit 1; }
 ! remote "test -f data/LIVE_HERE" || { echo "The server is already live."; exit 1; }
-bash scripts/deploy.sh
+if server_has_git; then  # a creator's server takes its code from GitHub, at the version this Mac runs
+    VERSIONS='Your Mac and GitHub have different versions. Say "update my bot" first, then move.'
+    remote "git fetch -q origin"
+    [ "$(git rev-parse HEAD)" = "$(remote "git rev-parse origin/main")" ] || { echo "$VERSIONS"; exit 1; }
+    SERVER_CHANGED="$(remote "git status --porcelain --untracked-files=no" | cut -c4- | tr '\n' ',' | sed -e 's/,$//' -e 's/,/, /g')"
+    if [ -n "$SERVER_CHANGED" ]; then
+        echo "These files were changed on the server: $SERVER_CHANGED"
+        echo "I won't move over local changes on the server. $VERSIONS"
+        exit 1
+    fi
+    remote "git merge -q --ff-only origin/main"
+    [ "$(remote "git rev-parse HEAD")" = "$(git rev-parse HEAD)" ] || { echo "$VERSIONS"; exit 1; }
+    remote "$UV sync --frozen -q && if [ -f config.toml ]; then $UV run --frozen igdm upgrade; fi"
+else
+    bash scripts/deploy.sh
+fi
 NAME="$(server_name)"
 
 STAGE=2; say "2. checking the login keys from the server"
@@ -65,16 +82,7 @@ STAGE=7; say "7. locking the Mac, then starting the bot and dashboard on the ser
 echo "$(date '+%Y-%m-%d %H:%M') to $NAME" > data/MOVED_TO_SERVER  # before the server starts
 STARTED="$(date -u +%Y-%m-%dT%H:%M:%S+00:00)"
 remote "touch data/LIVE_HERE && sudo systemctl enable --now igdm igdm-dashboard"
-echo "waiting for the server bot's first check (up to 5 minutes)..."
-FRESH=no
-for _ in $(seq "${IGDM_START_POLLS:-30}"); do
-    sleep "${IGDM_START_WAIT:-10}"
-    END="$(remote "sqlite3 data/igdm.sqlite \"SELECT json_extract(value, '\$.end') FROM kv WHERE key='last_tick'\"" || true)"
-    if [ -n "$END" ] && python3 -c 'import sys; from datetime import datetime as d; sys.exit(0 if d.fromisoformat(sys.argv[1]) >= d.fromisoformat(sys.argv[2]) else 1)' "$END" "$STARTED"; then
-        FRESH=yes; break
-    fi
-done
-[ "$FRESH" = yes ] || { echo "The server bot hasn't finished a check in 5 minutes."; false; }
+wait_first_tick "$STARTED" || { echo "The server bot hasn't finished a check in 5 minutes."; false; }
 rm -f "$SNAP" "$SNAP-wal" "$SNAP-shm"
 
 STAGE=8; say "8. backups to this Mac"

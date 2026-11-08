@@ -28,6 +28,12 @@ class DryRunInstagram:
     def find_media(self, shortcode: str):
         return self._inner.find_media(shortcode)
 
+    def follower_count(self) -> int:
+        return self._inner.follower_count()
+
+    def list_posts(self, since: datetime | None = None):
+        return self._inner.list_posts(since)
+
     def list_comments(self, media_id: str) -> list[Comment]:
         return self._inner.list_comments(media_id)
 

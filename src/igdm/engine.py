@@ -23,6 +23,7 @@ from igdm.messages import (
     base_of, find_email, first_name, pick_got_it, pick_public_reply, render, render_dm1,
     suspect_domain,
 )
+from igdm.milestones import sync_milestones
 from igdm.pacing import (
     SEEN_PAUSE, dm_due_at, in_quiet_hours, is_expired, typing_seconds, uniform_delay,
     under_hourly_cap, window_open,
@@ -1269,6 +1270,7 @@ def tick(ctx: Context) -> dict[str, int | str]:
         ("followups", resume_followups),
         ("gotits", send_pending_gotits),
         ("email", _send_emails),
+        ("milestones", sync_milestones),
     )
     for name, fn in phases:
         try:

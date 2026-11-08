@@ -94,6 +94,8 @@ class InstagramAPI(Protocol):
     def me(self) -> tuple[str, str]: ...
     def find_media_id(self, shortcode: str) -> str | None: ...
     def find_media(self, shortcode: str) -> Media | None: ...
+    def follower_count(self) -> int: ...
+    def list_posts(self, since: datetime | None = None) -> list[Media]: ...
     def list_comments(self, media_id: str) -> list[Comment]: ...
     def list_comment_replies(self, comment_id: str) -> list[Comment]: ...
     def send_private_reply(self, own_id: str, comment_id: str, text: str) -> tuple[str, str]: ...
@@ -237,6 +239,23 @@ class GraphInstagram:
                 ts = item.get("timestamp")
                 return Media(item["id"], parse_ts(ts) if ts else None)
         return None
+
+    def follower_count(self) -> int:
+        """The account's follower count right now (Instagram keeps no history of it)."""
+        node = self._ig_id if self.facebook_login else "me"
+        return int(self._request("GET", node, params={"fields": "followers_count"})["followers_count"])
+
+    def list_posts(self, since: datetime | None = None) -> list[Media]:
+        """The account's feed posts, newest first, back to `since` (None: all of them)."""
+        media = f"{self._ig_id}/media" if self.facebook_login else "me/media"
+        out = []
+        for item in self._pages(media, {"fields": "id,timestamp", "limit": 50}):
+            ts = item.get("timestamp")
+            at = parse_ts(ts) if ts else None
+            if since is not None and at is not None and at < since:
+                break
+            out.append(Media(item["id"], at))
+        return out
 
     @staticmethod
     def _comment(c: dict[str, Any]) -> Comment:

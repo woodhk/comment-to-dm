@@ -26,6 +26,8 @@ Rules:
 - `comment_replies[comment_id]` lists public replies under a comment (bot public replies are
   appended too, from own_username/own_id). `fail_list_replies[comment_id]` makes
   list_comment_replies raise.
+- `followers` is what follower_count returns (`fail_followers` makes it raise); `posts` are the
+  feed posts list_posts returns, newest first, back to `since`.
 - `add_own_message(igsid, text, at)` adds an outgoing message the bot didn't send (Alex typing
   by hand in the Instagram app).
 """
@@ -78,6 +80,10 @@ class FakeInstagram:
         self.fail_actions: Exception | None = None
         self._messages: dict[str, list[Message]] = {}  # igsid -> messages
         self._ids = itertools.count(1)
+        self.followers = 0
+        self.posts: list[Media] = []  # feed posts, any order
+        self.fail_followers: Exception | None = None
+        self.post_reads: list[datetime | None] = []  # every list_posts `since`, in order
 
     def _next_id(self, prefix: str) -> str:
         return f"{prefix}{next(self._ids)}"
@@ -108,6 +114,17 @@ class FakeInstagram:
     def find_media(self, shortcode: str) -> Media | None:
         mid = self.find_media_id(shortcode)
         return Media(mid, self.media_posted.get(shortcode)) if mid else None
+
+    def follower_count(self) -> int:
+        if self.fail_followers:
+            raise self.fail_followers
+        return self.followers
+
+    def list_posts(self, since: datetime | None = None) -> list[Media]:
+        self.post_reads.append(since)
+        floor = datetime.min.replace(tzinfo=timezone.utc)
+        posts = sorted(self.posts, key=lambda m: m.posted_at or floor, reverse=True)
+        return [m for m in posts if since is None or m.posted_at is None or m.posted_at >= since]
 
     def list_comments(self, media_id: str) -> list[Comment]:
         return list(self.comments.get(media_id, []))

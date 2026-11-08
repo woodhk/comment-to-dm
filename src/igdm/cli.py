@@ -5,6 +5,7 @@ from __future__ import annotations
 import argparse
 import csv
 import fcntl
+import getpass
 import logging
 import os
 import random
@@ -13,12 +14,13 @@ import signal
 import sys
 import threading
 import time
+import tomllib
 from datetime import datetime, timedelta, timezone
 from logging.handlers import RotatingFileHandler
 from pathlib import Path
 
 import httpx
-from dotenv import load_dotenv
+from dotenv import dotenv_values, load_dotenv
 
 from igdm import token_store
 from igdm.config import Config, ReelConfig, load_config
@@ -27,7 +29,7 @@ from igdm.dryrun import DryRunInstagram
 from igdm.engine import COMMENT_POLL_INTERVAL, Context, idle, tick
 from igdm.instagram import FB_GRAPH, GraphInstagram, InstagramError
 from igdm.jev import Classifier, JevClassifier, JevError
-from igdm.mailer import DryRunMailer, GmailSender, Mailer
+from igdm.mailer import DryRunMailer, GmailSender, MailLoginRefused, MailRefused, Mailer
 from igdm.messages import render
 from igdm.openai_classifier import OpenAIClassifier
 from igdm.upgrade import upgrade_file
@@ -43,6 +45,26 @@ CONNECT_ENV = ("META_APP_ID", "META_APP_SECRET", "FB_USER_TOKEN")
 SECRET_ENV = ("IG_ACCESS_TOKEN", "TYPESAFE_API_KEY", "IG_PAGE_TOKEN", "META_APP_SECRET",
               "FB_USER_TOKEN", "GMAIL_APP_PASSWORD", "OPENAI_API_KEY", "GEMINI_API_KEY",
               "NTFY_TOPIC", "HEALTHCHECKS_URL")
+# Every key `.env.example` lists, in its order, with what it is for (shown by `igdm keys`).
+KNOWN_KEYS: tuple[tuple[str, str], ...] = (
+    ("META_APP_ID", "Your Meta app's ID, from developers.facebook.com/apps (used by `igdm connect`)."),
+    ("META_APP_SECRET", "Your Meta app's secret, from the same page (used by `igdm connect`)."),
+    ("FB_USER_TOKEN", "A short-lived Facebook token that `igdm connect` swaps for a lasting one."),
+    ("IG_PAGE_TOKEN", "The never-expiring Page token that `igdm connect` saves for you."),
+    ("FB_PAGE_ID", "The ID of your Facebook Page, saved by `igdm connect`."),
+    ("IG_ACCOUNT_ID", "The ID of your Instagram account, saved by `igdm connect`."),
+    ("IG_ACCESS_TOKEN", "Only for the older Instagram Login setup (api = \"instagram_login\")."),
+    ("TYPESAFE_API_KEY", "Optional Jev key from typesafe.ai for spotting requests; OpenAI is used without it."),
+    ("GMAIL_APP_PASSWORD", "The Gmail app password the bot uses to send your emails."),
+    ("OPENAI_API_KEY", "Your OpenAI key, for spotting requests and writing AI replies."),
+    ("GEMINI_API_KEY", "Your Gemini key, if you pick Gemini for AI replies."),
+    ("NTFY_TOPIC", "A private topic name for phone alerts through the ntfy app (cloud server only)."),
+    ("HEALTHCHECKS_URL", "Your healthchecks.io ping URL, which alerts you if the bot stops (cloud server only)."),
+    ("ALERT_EMAIL", "Where alert emails go (it defaults to your Gmail address)."),
+)
+GMAIL_DEFAULT_HOST = "smtp.gmail.com"
+GMAIL_DEFAULT_PORT = 465
+_KEY_NAME = re.compile(r"^[A-Z][A-Z0-9_]*$")
 _ENV_LINE = re.compile(r"^\s*(?:export\s+)?([A-Za-z_][A-Za-z0-9_]*)\s*=")
 
 
@@ -733,6 +755,88 @@ def cmd_connect(cfg: Config, root: Path, args) -> int:
     return 0
 
 
+def cmd_keys(root: Path) -> int:
+    """List which keys are set in .env. Never prints a value."""
+    present = {k for k, v in dotenv_values(root / ".env").items() if v}
+    for name, purpose in KNOWN_KEYS:
+        _say(f"{name}: {'set' if name in present else 'missing'}")
+        _say(f"  {purpose}")
+    return 0
+
+
+def _clean_pasted(raw: str) -> str:
+    value = raw.strip()
+    if len(value) >= 2 and value[0] == value[-1] and value[0] in "\"'":
+        value = value[1:-1].strip()
+    return value
+
+
+def cmd_set_key(root: Path, args) -> int:
+    """Save one key to .env from a hidden prompt, so the value never enters the chat."""
+    known = [name for name, _ in KNOWN_KEYS]
+    if args.name not in known:
+        if _KEY_NAME.match(args.name):
+            _say(f"{args.name} is not a key this bot uses. The keys are: {', '.join(known)}.",
+                 sys.stderr)
+        else:  # it may be a pasted secret: never echo it
+            REDACTOR.add(args.name)
+            _say(f"That isn't a key name. The keys are: {', '.join(known)}.", sys.stderr)
+        return 1
+    if args.stdin:  # only for values Claude made up itself, such as an ntfy topic
+        raw = sys.stdin.readline()
+    else:
+        raw = getpass.getpass(f"Paste {args.name} and press Enter (it stays hidden): ")
+    REDACTOR.add(raw.strip(), _clean_pasted(raw))
+    value = _clean_pasted(raw)
+    if args.name == "GMAIL_APP_PASSWORD":  # shown in groups of four; it never has spaces
+        value = "".join(value.split())
+    if not value:
+        _say("Nothing was pasted, so nothing changed.", sys.stderr)
+        return 1
+    if "\n" in value or "\r" in value:
+        _say("That had more than one line, so nothing changed. Paste just the key.", sys.stderr)
+        return 1
+    if " #" in value or "${" in value or value[0] in "\"'" or value[-1] in "\"'":
+        _say("That value has characters .env can't store safely. Check you copied only the key.",
+             sys.stderr)
+        return 1
+    update_env_file(root / ".env", {args.name: value})
+    _say(f"Saved {args.name}.")
+    return 0
+
+
+def cmd_test_gmail(config_path: Path, args) -> int:
+    """Sign in to Gmail with the app password and sign out. Sends nothing."""
+    address, host, port = args.address, GMAIL_DEFAULT_HOST, GMAIL_DEFAULT_PORT
+    if config_path.exists():
+        email = tomllib.loads(config_path.read_text()).get("email", {})
+        address = address or email.get("from_address")
+        host = email.get("smtp_host", host)
+        port = int(email.get("smtp_port", port))
+    password = os.environ.get("GMAIL_APP_PASSWORD")
+    if not password:
+        _say("GMAIL_APP_PASSWORD is not set. Run `bash scripts/ask_key.sh GMAIL_APP_PASSWORD` first.",
+             sys.stderr)
+        return 1
+    REDACTOR.add(password)
+    if not address:
+        _say("No Gmail address to sign in with. Put it under [email] from_address in "
+             "config.toml, or pass --address you@gmail.com.", sys.stderr)
+        return 1
+    try:
+        GmailSender(address, password, "", host, port).check_login()
+    except MailLoginRefused:
+        _say(f"Gmail refused the sign-in for {address}. Check the app password and that "
+             "2-Step Verification is on.", sys.stderr)
+        return 1
+    except MailRefused:
+        _say(f"Could not reach Gmail ({host}). Check the internet connection and try again.",
+             sys.stderr)
+        return 1
+    _say(f"Gmail sign-in works for {address}.")
+    return 0
+
+
 def _parser() -> argparse.ArgumentParser:
     p = argparse.ArgumentParser(prog="igdm", description="Instagram comment to DM automation")
     p.add_argument("--config", type=Path, default=DEFAULT_CONFIG, help="path to config.toml")
@@ -772,6 +876,16 @@ def _parser() -> argparse.ArgumentParser:
                    help="which Facebook Page to use, if several have a linked Instagram account")
     sub.add_parser(parents=[common], name="upgrade",
                    help="bring config.toml up to the settings version this bot needs")
+    sub.add_parser(parents=[common], name="keys",
+                   help="show which keys are set in .env (never prints a value)")
+    s = sub.add_parser(parents=[common], name="set-key",
+                       help="save one key to .env from a hidden prompt")
+    s.add_argument("name", metavar="NAME", help="the key, for example OPENAI_API_KEY")
+    s.add_argument("--stdin", action="store_true",
+                   help="read the value from one line of stdin (only for values you made up)")
+    s = sub.add_parser(parents=[common], name="test-gmail",
+                       help="check the Gmail sign-in works (sends nothing)")
+    s.add_argument("--address", help="the Gmail address (default: [email] from_address)")
     return p
 
 
@@ -809,6 +923,12 @@ def main(argv: list[str] | None = None) -> int:
     try:
         if args.cmd == "upgrade":  # before load_config: an old file won't load
             return cmd_upgrade(config_path)
+        if args.cmd == "keys":  # these three work before config.toml exists
+            return cmd_keys(root)
+        if args.cmd == "set-key":
+            return cmd_set_key(root, args)
+        if args.cmd == "test-gmail":
+            return cmd_test_gmail(config_path, args)
         cfg = load_config(config_path)
         return COMMANDS[args.cmd](cfg, root, args)
     except CliError as e:

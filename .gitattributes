@@ -1,0 +1,12 @@
+# Unix line endings everywhere, also on Windows (Git for Windows would otherwise turn them into
+# CRLF, and bash then fails on the scripts).
+*.sh text eol=lf
+*.py text eol=lf
+*.toml text eol=lf
+*.md text eol=lf
+*.template text eol=lf
+*.service text eol=lf
+*.timer text eol=lf
+*.example text eol=lf
+*.html text eol=lf
+*.lock text eol=lf
