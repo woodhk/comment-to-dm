@@ -1,0 +1,175 @@
+# Test fixture: a fixed copy of config.toml (one reel) so tests never depend on the live file.
+timezone = "Asia/Singapore"
+poll_seconds = 60
+mode = "full"            # "public_only" while waiting on Meta app review
+db_path = "data/igdm.sqlite"
+api = "facebook_login"   # or "instagram_login" (old graph.instagram.com setup)
+messaging_node = "page"  # facebook_login only: send DMs via the Page ("page") or the IG account ("ig")
+
+[jev]
+model = "jev-latest"
+comment_threshold = 0.8
+reply_threshold = 0.8
+
+[pacing]
+dm_delay_seconds = [50, 70]  # comment to first DM
+public_reply_delay_seconds = [5, 10]
+followup_gap_seconds = [4, 12]
+backlog_gap_seconds = [60, 180]
+max_dms_per_hour = 25
+quiet_hours = ["02:00", "08:30"]  # no Instagram messages at all in this window (local time)
+reply_settle_seconds = 90   # wait after their message before answering, in case they're still typing
+# Chatting: they answered within chat_window_seconds of the bot's last message. Their
+# conversation is checked every chat_poll_seconds for chat_watch_seconds after the bot's last
+# message, and they're answered chat_settle_seconds after they write instead.
+chat_window_seconds = 120
+chat_poll_seconds = [10, 15]
+chat_watch_seconds = 180
+chat_settle_seconds = 5
+email_wait_minutes = 30
+private_reply_max_age_hours = 167
+
+[email]
+enabled = true
+from_address = "owner@example.com"
+from_name = "Sam Lee"
+delay_minutes = 2        # send this long after the address comes in (any hour, quiet hours don't apply)
+
+[messages]
+dm1 = "hey {name}, it's Sam from that travel reel you commented {keyword} on. do you still want the guide?"
+repeat_dm1 = "hey {name}, can i send the {keyword} guide to the same email as last time?"
+followup_1 = "glad to share the guide, instagram just won't let me send files in dms."
+followup_2 = "Could I email it to you instead?"
+public_replies = [
+  "check dms", "sent you a dm", "just messaged you", "have a look in your dms", "dm sent",
+  "check your inbox", "sent it to your dms", "messaged you just now", "sent 📩", "dms 👀",
+  "check your messages", "just dropped you a message", "it's in your dms", "sent you a note", "check your dm requests",
+  "in your inbox now", "sent!", "on its way, check dms", "message sent", "have a look at your messages",
+  "dmed 🙌", "just sent it", "check dms please", "dropped it in your dms", "sent you a message",
+  "look in your dms", "your dms have it", "sent over to your dms", "messaged 👍", "it's on its way",
+  "check your dms when you can", "sent, have a look", "done, check dms", "just sent you something", "dm on its way",
+  "have a peek at your dms", "sent it your way", "check messages", "all sent, check dms", "in your dms",
+]
+got_it = [
+  "got it, i'll email it shortly 🙌", "perfect, it's on its way soon",
+  "thanks, emailing it to you shortly", "got it, it'll be with you in a bit",
+  "great, thanks! emailing it shortly", "nice, will email it soon",
+]
+# fallback email for reels without their own email_subject / email_body
+email_subject = "your {keyword} guide"
+email_body = "Hi {name}, here is the guide you asked for:\n{material_url}"
+
+[llm]
+# writes a reply when nothing in the bank fits. needs OPENAI_API_KEY (or GEMINI_API_KEY) in .env
+provider = "openai"   # or "gemini"
+model = "gpt-6-luna"  # gemini: e.g. "gemini-3.8-flash"
+
+[replies]
+# The AI reply step.
+enabled = true
+max_asks = 3          # asked for the email this many times with nothing back: flag it for the owner
+max_llm_replies = 2   # AI-written replies per conversation before it flags instead
+# AI-written replies containing any of these are rewritten once, then flagged
+deny_words = [
+  "delve", "certainly", "absolutely", "i'd be happy to", "happy to help", "great question",
+  "resources", "valuable", "assist", "kindly", "furthermore", "feel free", "don't hesitate",
+  "rest assured", "i hope this helps",
+]
+
+# Prewritten replies. Jev picks the one that fits their reply; nothing fits -> the AI writes one.
+# stage: "offer" = before the email ask, "asked" = after it, "any" = both.
+# reels: only for these reel keys (leave out for every reel).
+
+[[replies.bank]]
+id = "yes"
+stage = "offer"
+when = "They want it: yes, sure, please, go ahead, a thumbs up."
+# uses followup_1 + followup_2 from [messages]
+
+[[replies.bank]]
+id = "neater"
+stage = "any"
+reels = ["tokyo"]
+when = "They picked the neater printable version, asked for a PDF, or are waiting on the neater version the owner promised."
+replies = [
+  "done! i made a neater printable version with a map. instagram won't let me send files in dms though, what's your email and i'll get it to you?",
+  "it's ready, i added a map and a printable page. what's your email so i can get it to you?",
+]
+
+[[replies.bank]]
+id = "either"
+stage = "offer"
+reels = ["tokyo"]
+when = "They are happy with any version: whatever works, your call, either one."
+replies = [
+  "great, i'll email you the printable version then. what's your email?",
+  "no problem, i'll email the printable one. what email should it go to?",
+]
+
+[[replies.bank]]
+id = "free"
+stage = "any"
+when = "They ask whether it costs anything or if there is a catch."
+replies = [
+  "yes it's free, no catch. what's your email so i can get it to you?",
+  "it's all free, just send me your email and it's yours",
+]
+
+[[replies.bank]]
+id = "later"
+stage = "any"
+when = "They will reply later, are busy now, or will send an email address soon."
+replies = [
+  "no hurry, whenever you're ready just pop your email here and i'll get it to you",
+]
+
+[[replies.bank]]
+id = "thanks"
+stage = "any"
+when = "They only say thanks, with no email address."
+replies = [
+  "you're welcome! i just need your email to get it to you",
+  "no problem, pop your email here and it's on its way",
+]
+
+[[replies.bank]]
+id = "asked_yes"
+stage = "asked"
+when = "They agree to email (sure, ok, fine) but have not typed an address yet."
+replies = [
+  "great, which email should i use?",
+  "lovely, what email should it go to?",
+]
+
+[[replies.bank]]
+id = "wrong_format"
+stage = "asked"
+when = "What they sent looks like an incomplete email address, such as a name with no @ part."
+replies = [
+  "that looks cut off, could you send the full email?",
+  "hmm that email looks incomplete, could you send it again?",
+]
+
+# Prices for the dashboard's AI spend (USD), from github.com/simonw/llm-prices (data/*.json),
+# checked 4 Nov 2026. A model without a price shows its usage as "no price set".
+# Changing a price fixes past totals too.
+[prices."gpt-6-luna"]
+per_m_input = 0.10   # per million input tokens (prompts under 272k tokens)
+per_m_output = 0.50  # per million output tokens
+
+# Jev 1.13 is $0.042 per million input tokens and free output, but Jev's API doesn't report
+# token counts, so this is an estimate per call: about 2,000 tokens a call, rounded up.
+[prices."jev-latest"]
+per_call = 0.0001
+
+[[reels]]
+key = "tokyo"
+url = "https://www.instagram.com/reel/TESTREEL01/"
+keyword = "Tokyo"
+offer = "the free guide"
+material_url = "https://example.com/material"
+handle_comments_after = "2026-11-03T14:00:00"
+hand_dm_phrases = ["from that Tokyo reel"]  # finds threads the owner started by hand
+ai_notes = "There is also a short checklist included with the guide."
+email_subject = "your {keyword} guide"
+email_body = "Hi {name}, here is the guide you asked for:\n{material_url}"

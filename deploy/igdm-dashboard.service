@@ -1,0 +1,19 @@
+# The dashboard (igdm dashboard) on 127.0.0.1:8787, published on the tailnet by
+# `tailscale serve`. Waits for data/LIVE_HERE too: before the move its database is empty
+# and would be replaced, so anything entered on it would be lost.
+[Unit]
+Description=igdm dashboard
+After=network-online.target
+Wants=network-online.target
+ConditionPathExists=/home/igdm/app/data/LIVE_HERE
+
+[Service]
+Type=simple
+User=igdm
+WorkingDirectory=/home/igdm/app
+ExecStart=/home/igdm/.local/bin/uv run --frozen --project /home/igdm/app igdm dashboard
+Restart=always
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target

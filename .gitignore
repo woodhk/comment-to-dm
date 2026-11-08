@@ -1,0 +1,18 @@
+# Your own settings and keys. These never leave your computer.
+/config.toml
+/config.toml.bak-*
+/.env
+/scripts/server.env
+/tests/data/personal.txt
+/.setup-progress.json
+
+# Your leads and logs
+/data/
+/logs/
+
+# Tools and scratch folders
+.venv/
+__pycache__/
+.pytest_cache/
+.worktrees/
+.superpowers/

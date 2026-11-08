@@ -1,0 +1,45 @@
+# comment-to-dm
+
+A free bot that answers the people who comment on your Instagram reels.
+
+## What it does
+
+You post a reel and tell people to comment a keyword if they want something from you, like a guide, a template or a list. When someone comments, the bot sends them a friendly DM a minute or so later, while they are still on your reel. If they want the material, the bot asks for their email, saves it, and sends the material from your own Gmail a couple of minutes later.
+
+It sounds like you, not like a bot. Replies come from a bank of messages you have approved, and a cheap AI writes one only when nothing fits. If a comment is off topic, upset or unclear, the bot leaves it alone and puts it on your dashboard with a note on what to do.
+
+The flow looks like this.
+
+- Someone comments your keyword on a reel.
+- The bot sends a DM and a short public reply.
+- They say yes, and the bot asks for their email.
+- They send it, and your material arrives in their inbox from your Gmail.
+
+It uses only Instagram's official API, so your account is not at risk from unofficial tools. It runs on your Mac, or on a small cloud server if you want it on all day.
+
+## What it costs you
+
+The code is free, and so is the licence. There is no monthly subscription to Make.com, ManyChat or anything like it.
+
+You pay small usage fees to the AI provider you choose, and only for the replies the AI writes. Most replies come from your approved messages and cost nothing. Your dashboard shows what you have spent.
+
+A cloud server is optional. If you want the bot running when your computer is off, expect to pay a few dollars a month to a hosting company. Running it on your own Mac costs nothing extra.
+
+You also need Claude Code, which has its own plan. Check the current plans on the Claude Code page.
+
+## How to start
+
+1. Install Claude Code from https://claude.com/claude-code.
+2. Download this project by running `git clone https://github.com/woodhk/comment-to-dm.git` in your terminal.
+3. Run `cd comment-to-dm`, then run `claude`.
+4. Type `set me up`.
+
+Claude takes it from there. It asks you a few questions, opens the pages you need, and does the technical parts for you. You stay in charge of anything that involves your accounts, your passwords or your card.
+
+## Updating
+
+When there is a new version, tell Claude `update my bot`. You can also run `scripts/update.sh` yourself. Your settings, keys and leads stay where they are.
+
+## Made by Alex Wood
+
+I built this bot for my own reels and shared it with you. You can find me on Instagram at [@alexwood.j](https://www.instagram.com/alexwood.j/).

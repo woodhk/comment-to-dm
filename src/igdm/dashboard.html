@@ -1,0 +1,1225 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Instagram leads</title>
+<style>
+  /* Layout: page title + subtitle; four tinted stat cards; one wide chart (emails line over DM bars);
+     then titled sections (Needs you, Funnel) with soft-filled rows; then a segmented detail table.
+     Light and dark share every token name; colour marks meaning, tints mark each stat. */
+  :root {
+    --bg: #fafaf8; --panel: #ffffff; --row: #f3f3f0; --row-hover: #ececE8; --ink: #17181a;
+    --ink-2: #55585e; --muted: #8b8e94; --line: #e6e6e1;
+    --accent: #2f5fd0;
+    --box: #ffffff; --box-line: #e4e4df;
+    --side: #f3f3f0; --shadow: rgba(23, 24, 26, .12);
+    --good: #1d7a4e; --warn: #a75b00; --bad: #c33a2f;
+    --t-mint: #dff3e7; --t-mint-ink: #145c39;
+    --t-sky: #dfeafc; --t-sky-ink: #1f4aa8;
+    --t-peach: #fde3d3; --t-peach-ink: #9a3d0c;
+    --t-lilac: #ece4fb; --t-lilac-ink: #5a33a8;
+    --t-red: #fbe1de; --t-red-ink: #a32a20;
+    --chart: #17181a; --chart-fill: rgba(23, 24, 26, .06); --bar: #e1e1dc; --tip: #17181a; --tip-ink: #ffffff;
+    --font: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", Roboto, "Helvetica Neue", sans-serif;
+    --display: -apple-system, BlinkMacSystemFont, "SF Pro Display", "Segoe UI", Roboto, "Helvetica Neue", sans-serif;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #0e0f11; --panel: #16181b; --row: #1b1d21; --row-hover: #22252a; --ink: #f1f2f3;
+      --ink-2: #b9bcc2; --muted: #7f838a; --line: #26292e;
+      --accent: #8eaaff;
+      --box: #141619; --box-line: #2a2d33;
+      --side: #121316; --shadow: rgba(0, 0, 0, .5);
+      --good: #5fd39a; --warn: #f3b55b; --bad: #ff8a80;
+      --t-mint: #13291e; --t-mint-ink: #8fe3b6;
+      --t-sky: #15203a; --t-sky-ink: #a9c2ff;
+      --t-peach: #33200f; --t-peach-ink: #ffbf94;
+      --t-lilac: #231b38; --t-lilac-ink: #cdb8ff;
+      --t-red: #3a1715; --t-red-ink: #ffaaa2;
+      --chart: #f1f2f3; --chart-fill: rgba(241, 242, 243, .07); --bar: #3b3f47; --tip: #f1f2f3; --tip-ink: #0e0f11;
+      color-scheme: dark;
+    }
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; }
+  body { background: var(--bg); color: var(--ink); font: 15px/1.5 var(--font); -webkit-font-smoothing: antialiased; }
+  .num { font-variant-numeric: tabular-nums; }
+  a { color: var(--accent); text-decoration: none; }
+  a:hover { text-decoration: underline; }
+  [hidden] { display: none !important; }
+  .page { max-width: 1180px; margin: 0 auto; padding: 48px 32px 80px; display: flex; flex-direction: column; gap: 56px; }
+
+  /* App shell: a sidebar of icons (names show when it's open) beside the current view. */
+  .shell { display: flex; min-height: 100vh; }
+  .content { flex: 1; min-width: 0; }
+  #side { flex: none; width: 68px; position: sticky; top: 0; height: 100vh; transition: width .18s ease; z-index: 30; }
+  #side.open { width: 220px; }
+  .side-in { position: absolute; inset: 0 auto 0 0; width: 100%; background: var(--side); border-right: 1px solid var(--line);
+             display: flex; flex-direction: column; gap: 4px; padding: 14px 12px; transition: width .18s ease; }
+  #side-toggle { width: 44px; height: 40px; padding: 0; border: 0; background: none; color: var(--ink-2);
+                 display: grid; place-items: center; margin-bottom: 10px; }
+  #side-toggle:hover { color: var(--ink); background: var(--row); }
+  #side-toggle svg, .nav svg { width: 20px; height: 20px; flex: none; }
+  .nav { display: flex; align-items: center; gap: 12px; height: 42px; padding: 0 12px; border-radius: 12px;
+         color: var(--ink-2); white-space: nowrap; position: relative; font-weight: 500; }
+  .nav:hover { background: var(--row); color: var(--ink); text-decoration: none; }
+  .nav[aria-current=page] { background: var(--box); color: var(--ink); font-weight: 600; box-shadow: 0 1px 2px var(--shadow); }
+  #side:not(.open) .nav span { display: none; }
+  #side:not(.open) .nav:hover::after { content: attr(data-name); position: absolute; left: 52px; top: 50%; transform: translateY(-50%);
+         background: var(--tip); color: var(--tip-ink); font-size: 13px; font-weight: 500; padding: 5px 10px; border-radius: 8px; }
+  .bannerwrap { max-width: 1180px; margin: 0 auto; padding: 24px 32px 0; display: flex; flex-direction: column; gap: 10px; }
+  .bannerwrap:empty { display: none; }
+  @media (max-width: 720px) {
+    #side, #side.open { width: 60px; }
+    .side-in { padding: 12px 8px; }
+    #side.open .side-in { width: 220px; box-shadow: 0 10px 40px var(--shadow); }
+    .bannerwrap { padding: 20px 16px 0; }
+  }
+  .box { border-radius: 18px; padding: 22px; }
+  .box.shade { background: var(--box); }
+  .box.outline { border: 1px solid var(--box-line); }
+
+  .head { display: flex; justify-content: space-between; align-items: flex-start; gap: 16px; flex-wrap: wrap; }
+  .head h1 { font: 700 32px/1.15 var(--display); letter-spacing: -0.025em; margin: 0; }
+  .head p { margin: 6px 0 0; color: var(--ink-2); }
+  .updated { display: inline-flex; align-items: center; gap: 8px; color: var(--ink-2); font-size: 13.5px;
+             border: 1px solid var(--line); background: var(--panel); border-radius: 10px; padding: 8px 12px; }
+  .updated i { width: 7px; height: 7px; border-radius: 50%; background: var(--good); }
+  .updated.stale i { background: var(--bad); }
+  .banner { background: var(--t-peach); color: var(--t-peach-ink); border-radius: 14px; padding: 14px 18px; font-weight: 600; }
+
+  .stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; }
+  .stat { border-radius: 18px; padding: 18px 20px 20px; display: flex; flex-direction: column; gap: 4px; min-width: 0; }
+  .stat .top { display: flex; justify-content: space-between; align-items: center; margin-bottom: 18px; }
+  .stat .top svg { width: 20px; height: 20px; }
+  .stat .label { font-size: 12px; font-weight: 600; letter-spacing: .08em; text-transform: uppercase; }
+  .stat .value { font: 600 44px/1 var(--display); letter-spacing: -0.03em; }
+  .stat .cap { font-size: 14px; margin-top: 8px; opacity: .85; }
+  .mint { background: var(--t-mint); color: var(--t-mint-ink); }
+  .sky { background: var(--t-sky); color: var(--t-sky-ink); }
+  .peach { background: var(--t-peach); color: var(--t-peach-ink); }
+  .lilac { background: var(--t-lilac); color: var(--t-lilac-ink); }
+  .stat.calm { background: var(--panel); color: var(--ink); border: 1px solid var(--line); }
+
+  .sec { display: flex; flex-direction: column; gap: 14px; min-width: 0; }
+  .sech { display: flex; justify-content: space-between; align-items: flex-end; gap: 12px; flex-wrap: wrap; }
+  .sech h2 { font: 600 19px/1.25 var(--display); letter-spacing: -0.01em; margin: 0; display: flex; align-items: center; gap: 8px; }
+  .sech p { margin: 3px 0 0; color: var(--muted); font-size: 14px; }
+  .count { font: 500 12.5px var(--font); color: var(--ink-2); background: var(--row); border-radius: 99px; padding: 1px 9px; }
+  .legend { display: flex; gap: 16px; color: var(--ink-2); font-size: 13.5px; }
+  .legend span { display: inline-flex; align-items: center; gap: 7px; }
+  .legend i { width: 9px; height: 9px; border-radius: 50%; }
+
+  .chart { position: relative; }
+  .chart svg { display: block; width: 100%; height: auto; overflow: visible; }
+  .chart text { fill: var(--muted); font-size: 12px; font-family: var(--font); }
+  .tip { position: absolute; pointer-events: none; background: var(--tip); color: var(--tip-ink); border-radius: 10px;
+         padding: 10px 12px; font-size: 13px; min-width: 150px; transform: translate(-50%, -100%); white-space: nowrap; }
+  .tip b { display: block; margin-bottom: 6px; }
+  .tip div { display: flex; justify-content: space-between; gap: 18px; }
+
+  .two { display: grid; grid-template-columns: minmax(0, 1.35fr) minmax(0, 1fr); gap: 20px; align-items: stretch; }
+
+  .rows { display: flex; flex-direction: column; gap: 8px; }
+  .row { background: var(--row); border-radius: 14px; padding: 14px 16px; display: flex; flex-direction: column; gap: 8px; min-width: 0; }
+  .rtop { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+  .handle { font-weight: 600; }
+  .tag { font-size: 12px; font-weight: 600; border-radius: 99px; padding: 2px 9px; white-space: nowrap; }
+  .tag.info { background: var(--t-sky); color: var(--t-sky-ink); }
+  .tag.you { background: var(--t-peach); color: var(--t-peach-ink); }
+  .tag.mail { background: var(--t-lilac); color: var(--t-lilac-ink); }
+  .date { margin-left: auto; font-size: 12.5px; color: var(--ink-2); border: 1px solid var(--line); background: var(--panel);
+          border-radius: 8px; padding: 2px 8px; white-space: nowrap; }
+  .reason { font-weight: 500; }
+  .quote { color: var(--ink-2); font-size: 14px; border-left: 2px solid var(--line); padding-left: 10px;
+           white-space: pre-wrap; word-break: break-word; }
+  .todo { color: var(--muted); font-size: 13.5px; }
+  .actions { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; margin-top: 2px; }
+  button { font: 500 14px var(--font); border-radius: 10px; padding: 7px 14px; cursor: pointer;
+           border: 1px solid var(--line); background: var(--panel); color: var(--ink); }
+  button:hover { background: var(--row-hover); }
+  button.primary { background: var(--ink); color: var(--bg); border-color: var(--ink); }
+  button.primary:hover { opacity: .9; background: var(--ink); }
+  button:disabled { opacity: .5; cursor: default; }
+  button:focus-visible, input:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+  input[type=email] { font: 14px var(--font); padding: 7px 12px; border-radius: 10px; flex: 1 1 200px; min-width: 0;
+                      border: 1px solid var(--line); background: var(--panel); color: var(--ink); }
+  .err { color: var(--bad); font-size: 13px; }
+  .err:empty { display: none; }
+  .clear { background: var(--row); border-radius: 14px; padding: 18px; color: var(--ink-2); display: flex; gap: 10px; align-items: center; }
+  .clear i { width: 8px; height: 8px; border-radius: 50%; background: var(--good); flex: none; }
+
+  .ftable { display: flex; flex-direction: column; gap: 6px; }
+  .fhead, .frow { display: grid; grid-template-columns: 1fr 64px 56px; gap: 12px; align-items: center; padding: 0 16px; }
+  .fhead { color: var(--muted); font-size: 13px; padding-bottom: 2px; }
+  .frow { background: var(--row); border-radius: 12px; padding: 12px 16px; }
+  .fname { display: flex; flex-direction: column; gap: 7px; min-width: 0; }
+  .bar { height: 4px; border-radius: 4px; background: var(--line); overflow: hidden; }
+  .bar b { display: block; height: 100%; background: var(--ink); border-radius: 4px; }
+  .r { text-align: right; }
+  .share { color: var(--ink-2); }
+
+  .seg { display: inline-flex; background: var(--row); border-radius: 12px; padding: 4px; gap: 2px; flex-wrap: wrap; }
+  .seg button { border: 0; background: none; border-radius: 9px; padding: 6px 12px; color: var(--ink-2); font-size: 14px; }
+  .seg button:hover { background: none; color: var(--ink); }
+  .seg button[aria-selected=true] { background: var(--panel); color: var(--ink); box-shadow: 0 1px 2px rgba(0, 0, 0, .08); }
+  .seg .n { color: var(--muted); margin-left: 6px; }
+  .tablewrap { overflow-x: auto; }
+  table { width: 100%; border-collapse: separate; border-spacing: 0 6px; font-size: 14.5px; }
+  th { text-align: left; color: var(--muted); font-weight: 500; font-size: 13px; padding: 0 16px 2px; white-space: nowrap; }
+  td { background: var(--row); padding: 12px 16px; vertical-align: top; }
+  td:first-child { border-radius: 12px 0 0 12px; }
+  td:last-child { border-radius: 0 12px 12px 0; }
+  td.dim { color: var(--ink-2); white-space: nowrap; }
+  .state { display: inline-flex; align-items: center; gap: 7px; white-space: nowrap; }
+  .state i { width: 7px; height: 7px; border-radius: 50%; background: var(--muted); }
+  .state.sent i { background: var(--good); } .state.queued i, .state.sending i { background: var(--accent); }
+  .state.failed i, .state.unknown i { background: var(--bad); } .state.manual i { background: var(--warn); }
+  .soon { color: var(--bad); font-weight: 600; }
+  .who { font-size: 12px; color: var(--muted); margin-right: 8px; }
+  .empty { background: var(--row); border-radius: 12px; padding: 18px; color: var(--muted); text-align: center; }
+
+  /* Reels tab: list of watched reels, the pause warning, and the add / edit form. */
+  .btn { display: inline-flex; align-items: center; font: 500 14px var(--font); border-radius: 10px; padding: 7px 14px;
+         border: 1px solid var(--line); background: var(--panel); color: var(--ink); white-space: nowrap; }
+  .btn:hover { background: var(--row-hover); text-decoration: none; }
+  .btn.primary { background: var(--ink); color: var(--bg); border-color: var(--ink); }
+  .btn.primary:hover { opacity: .9; background: var(--ink); }
+  .rlist { display: flex; flex-direction: column; gap: 8px; }
+  .reel { background: var(--row); border-radius: 14px; padding: 16px 18px; display: flex; flex-direction: column; gap: 12px; }
+  .rmain { display: flex; align-items: center; gap: 12px 20px; flex-wrap: wrap; }
+  .reel.paused .rtitle, .reel.paused .rmeta { opacity: .55; }
+  .rtitle { display: flex; align-items: center; gap: 10px; min-width: 140px; }
+  .rname { font-weight: 600; font-size: 16px; }
+  .tag.on { background: var(--t-mint); color: var(--t-mint-ink); }
+  .tag.off { background: var(--row-hover); color: var(--ink-2); }
+  .rmeta { display: flex; gap: 6px 16px; flex-wrap: wrap; color: var(--ink-2); font-size: 14px; }
+  .ract { margin-left: auto; display: flex; gap: 8px; }
+  .warn { background: var(--t-peach); color: var(--t-peach-ink); border-radius: 12px; padding: 14px 16px;
+          display: flex; flex-direction: column; gap: 12px; font-weight: 500; }
+  .back { color: var(--ink-2); font-size: 14px; display: inline-block; margin-bottom: 10px; }
+  .fgrid { display: flex; flex-direction: column; gap: 20px; }
+  .fgrid .sec { gap: 18px; }
+  .cols { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 16px; }
+  .field { display: flex; flex-direction: column; gap: 6px; min-width: 0; }
+  .field label { font-weight: 600; font-size: 14px; }
+  .lrow { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+  .lrow .tag { font-weight: 500; }
+  .hint { color: var(--muted); font-size: 13px; }
+  .dmprev { background: var(--panel); border: 1px solid var(--line); border-radius: 14px 14px 14px 4px;
+            padding: 9px 13px; font-size: 14px; align-self: flex-start; max-width: 100%; word-break: break-word; }
+  .dmprev b { font-weight: 600; background: var(--t-peach); color: var(--t-peach-ink); border-radius: 4px; padding: 0 3px; }
+  .note { color: var(--ink-2); font-size: 13.5px; font-weight: 500; }
+  .note:empty { display: none; }
+  .fgrid input[type=text], .fgrid input[type=datetime-local], .fgrid textarea, .fgrid select {
+    font: 14.5px/1.5 var(--font); padding: 9px 12px; border-radius: 10px; border: 1px solid var(--line);
+    background: var(--panel); color: var(--ink); width: 100%; min-width: 0; }
+  .fgrid textarea { min-height: 120px; resize: vertical; }
+  .fgrid textarea#f-email_body { min-height: 300px; }
+  .fgrid input[readonly] { background: var(--row); color: var(--ink-2); }
+  .fgrid input:focus-visible, .fgrid textarea:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+  .ferr { color: var(--bad); font-size: 13px; }
+  .ferr:empty { display: none; }
+  .gaps { color: var(--warn); font-size: 13.5px; font-weight: 600; }
+  .gaps:empty { display: none; }
+  .preview { background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 16px 18px;
+             white-space: pre-wrap; word-break: break-word; font-size: 14.5px; }
+  .preview mark { background: var(--t-peach); color: var(--t-peach-ink); border-radius: 4px; padding: 0 3px; }
+  details.box > summary { cursor: pointer; font: 600 17px/1.3 var(--display); }
+  details.box[open] > summary { margin-bottom: 18px; }
+  details .fgrid { gap: 18px; }
+  .formbar { position: sticky; bottom: 0; background: var(--bg); padding: 14px 0; display: flex; gap: 12px;
+             align-items: center; justify-content: flex-end; flex-wrap: wrap; border-top: 1px solid var(--line); }
+  .formbar .err { margin-right: auto; }
+  @media (max-width: 720px) { .cols { grid-template-columns: minmax(0, 1fr); } .ract { margin-left: 0; } }
+
+  /* Activity: a timeline of what the bot did. Icon tint = kind of action; red = error. */
+  .feed { display: flex; flex-direction: column; gap: 6px; }
+  .act { display: grid; grid-template-columns: 34px minmax(0, 1fr) auto; gap: 12px; align-items: start;
+         background: var(--row); border-radius: 14px; padding: 12px 14px; }
+  .act .ic { width: 34px; height: 34px; border-radius: 10px; display: grid; place-items: center; }
+  .act .ic svg { width: 18px; height: 18px; }
+  .act .body { display: flex; flex-direction: column; gap: 3px; min-width: 0; }
+  .act .line { display: flex; align-items: baseline; gap: 4px 8px; flex-wrap: wrap; }
+  .act .what { font-weight: 600; }
+  .act .for { color: var(--ink-2); }
+  .act .det { color: var(--ink-2); font-size: 14px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .feed.full .act .det { white-space: normal; word-break: break-word;
+                         display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; }
+  .act .times { font-size: 12.5px; color: var(--muted); }
+  .act .ago { font-size: 12.5px; color: var(--ink-2); white-space: nowrap; padding-top: 2px; }
+  .act.error .what { color: var(--bad); }
+  .k-dm, .k-dm_reply { background: var(--t-sky); color: var(--t-sky-ink); }
+  .k-public_reply { background: var(--t-lilac); color: var(--t-lilac-ink); }
+  .k-email_captured, .k-email_sent { background: var(--t-mint); color: var(--t-mint-ink); }
+  .k-flagged, .k-warn { background: var(--t-peach); color: var(--t-peach-ink); }
+  .k-error { background: var(--t-red); color: var(--t-red-ink); }
+  .dayh { font-size: 12px; font-weight: 600; letter-spacing: .08em; text-transform: uppercase; color: var(--muted);
+          padding: 14px 4px 4px; }
+  .dayh:first-child { padding-top: 0; }
+  .health { display: inline-flex; align-items: center; gap: 8px; font-size: 13.5px; color: var(--ink-2);
+            border: 1px solid var(--line); background: var(--panel); border-radius: 10px; padding: 6px 12px; }
+  .health i { width: 7px; height: 7px; border-radius: 50%; background: var(--muted); flex: none; }
+  .health.ok i { background: var(--good); }
+  .health.trouble i, .health.stopped i { background: var(--bad); }
+  .health.trouble, .health.stopped { color: var(--bad); }
+  .more { display: flex; justify-content: center; padding-top: 8px; }
+  .seeall { font-weight: 500; font-size: 14px; }
+  @media (max-width: 520px) { .act { grid-template-columns: 30px minmax(0, 1fr); } .act .ic { width: 30px; height: 30px; }
+                              .act .ago { grid-column: 2; padding-top: 0; } }
+
+  /* Send material by hand: a panel that slides in from the right over the page. */
+  .headact { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+  #manual-back { position: fixed; inset: 0; background: var(--shadow); z-index: 40; }
+  #manual { position: fixed; top: 0; right: 0; bottom: 0; width: min(460px, 100vw); z-index: 41;
+            background: var(--panel); border-left: 1px solid var(--line); box-shadow: -12px 0 40px var(--shadow);
+            display: flex; flex-direction: column; gap: 16px; overflow-y: auto;
+            padding: 22px max(22px, env(safe-area-inset-right, 0px)) 22px 22px; }
+  #manual .mh { display: flex; justify-content: space-between; align-items: center; gap: 12px; }
+  #manual h2 { font: 600 19px/1.25 var(--display); margin: 0; }
+  #manual-close { border: 0; background: none; font-size: 22px; line-height: 1; padding: 4px 8px; color: var(--ink-2); }
+  .mform { display: flex; flex-direction: column; gap: 14px; }
+  .mform input, .mform select { font: 14.5px var(--font); padding: 9px 12px; border-radius: 10px; width: 100%;
+            border: 1px solid var(--line); background: var(--bg); color: var(--ink); min-width: 0; flex: none; }
+  .mform input:focus-visible, .mform select:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+  .opt { font-weight: 400; color: var(--muted); }
+  .plabel { font-weight: 600; font-size: 14px; }
+  #m-preview { font-size: 14px; max-height: 260px; overflow-y: auto; background: var(--bg); }
+  #m-preview b { display: block; margin-bottom: 8px; }
+  .mbar { display: flex; gap: 10px; align-items: center; justify-content: flex-end; flex-wrap: wrap;
+          position: sticky; bottom: -22px; background: var(--panel); padding: 12px 0; border-top: 1px solid var(--line); }
+  .mbar .err, .mstatus { margin-right: auto; font-size: 13.5px; }
+  .mstatus.ok { color: var(--good); font-weight: 600; }
+  .mstatus.wait { color: var(--ink-2); }
+
+  /* Funnel reel picker and the By reel comparison table. */
+  #funnel-reel { font: 14px var(--font); padding: 6px 10px; border-radius: 10px; border: 1px solid var(--line);
+                 background: var(--panel); color: var(--ink); max-width: 100%; }
+  #funnel-reel:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+  th button.rsort { font: inherit; color: inherit; background: none; border: 0; padding: 0; cursor: pointer; }
+  th button.rsort:hover, th button.rsort[aria-sort] { color: var(--ink); }
+  tr[data-reel] { cursor: pointer; }
+  tr[data-reel]:hover td { background: var(--row-hover); }
+  tr[data-reel].picked td:first-child { box-shadow: inset 3px 0 0 var(--accent); }
+
+  @media (max-width: 960px) {
+    .stats { grid-template-columns: repeat(2, 1fr); }
+    .two { grid-template-columns: minmax(0, 1fr); }
+  }
+  @media (max-width: 520px) {
+    .page { padding: 28px 16px 56px; gap: 40px; }
+    .box { padding: 16px; }
+    .stats { grid-template-columns: 1fr; }
+    .head h1 { font-size: 26px; }
+    .stat .value { font-size: 38px; }
+  }
+</style>
+</head>
+<body>
+<div class="shell">
+<nav id="side" aria-label="Sections">
+  <div class="side-in">
+    <button id="side-toggle" type="button" aria-label="Open or close the sidebar" aria-expanded="true">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="16" rx="3"/><path d="M9 4v16"/></svg>
+    </button>
+    <a class="nav" href="#overview" data-name="Overview" aria-current="page">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7.5" height="9" rx="2"/><rect x="13.5" y="3" width="7.5" height="5" rx="2"/><rect x="13.5" y="11" width="7.5" height="10" rx="2"/><rect x="3" y="15" width="7.5" height="6" rx="2"/></svg>
+      <span>Overview</span>
+    </a>
+    <a class="nav" href="#reels" data-name="Reels">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="4"/><path d="M3 8.5h18M8 3l3 5.5M14 3l3 5.5"/><path d="m10.5 12.5 4 2.5-4 2.5z"/></svg>
+      <span>Reels</span>
+    </a>
+    <a class="nav" href="#activity" data-name="Activity">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12h4l3-8 4 16 3-8h4"/></svg>
+      <span>Activity</span>
+    </a>
+  </div>
+</nav>
+<div class="content">
+<div class="bannerwrap" id="banner"></div>
+<div class="page" id="view-overview">
+  <header class="head">
+    <div>
+      <h1>Instagram leads</h1>
+      <p>Comments and DMs from your reels, the emails they turned into, and what needs you.</p>
+    </div>
+    <div class="headact">
+      <button type="button" class="primary" id="manual-open">Send material</button>
+      <span class="updated" id="live"><i></i><span id="updated">Connecting</span></span>
+    </div>
+  </header>
+  <section class="stats" id="stats"></section>
+
+  <section class="sec box shade" id="latest">
+    <div class="sech">
+      <div><h2>Latest activity</h2><p>What the bot did most recently.</p></div>
+      <span class="health" id="health-o"><i></i><span>Checking</span></span>
+    </div>
+    <div class="feed" id="latest-feed"></div>
+    <a class="seeall" href="#activity">See all activity</a>
+  </section>
+
+  <section class="sec">
+    <div class="sech">
+      <div><h2>Emails and DMs</h2><p>Emails captured each day, over first DMs the bot sent.</p></div>
+      <div class="legend"><span><i style="background:var(--chart)"></i>Emails</span><span><i style="background:var(--bar)"></i>DMs sent</span></div>
+    </div>
+    <div class="chart" id="chart"></div>
+  </section>
+
+  <section class="two">
+    <div class="sec box shade">
+      <div class="sech"><div><h2>Needs you <span class="count num" id="flagcount">0</span></h2>
+        <p>Conversations the bot handed to you, with what to do.</p></div></div>
+      <div class="rows" id="flags"></div>
+    </div>
+    <div class="sec box shade">
+      <div class="sech"><div><h2>Funnel</h2><p id="funnelsub">From first DM to email sent.</p></div>
+        <select id="funnel-reel" aria-label="Which reel's funnel" hidden></select></div>
+      <div id="funnel"></div>
+    </div>
+  </section>
+
+  <section class="sec box outline">
+    <div class="sech">
+      <div><h2>Details</h2><p>Everyone the bot knows about, by where they are.</p></div>
+      <div class="seg" role="tablist" id="tabs"></div>
+    </div>
+    <div class="tablewrap" id="detail"></div>
+  </section>
+</div>
+<div class="page" id="view-reels" hidden></div>
+<div id="manual-back" hidden></div>
+<aside id="manual" role="dialog" aria-modal="true" aria-labelledby="manual-h" hidden>
+  <div class="mh"><h2 id="manual-h">Send material by hand</h2>
+    <button type="button" id="manual-close" aria-label="Close">&times;</button></div>
+  <p class="hint">For someone who DM'd you instead of commenting. The bot emails them the reel's
+    material from your Gmail. Send them a quick "got it" on Instagram yourself.</p>
+  <form class="mform" id="manual-form" novalidate>
+    <div class="field"><label for="m-name">Name</label>
+      <input id="m-name" type="text" autocomplete="off" maxlength="60">
+      <span class="ferr" data-for="name"></span></div>
+    <div class="field"><label for="m-handle">Instagram handle <span class="opt">(optional)</span></label>
+      <input id="m-handle" type="text" autocomplete="off" placeholder="@handle">
+      <span class="hint">Shows them in your Emails list, and stops the bot asking for their email again if they comment later.</span>
+      <span class="ferr" data-for="handle"></span></div>
+    <div class="field"><label for="m-reel">Reel</label><select id="m-reel"></select>
+      <span class="ferr" data-for="reel"></span></div>
+    <div class="field"><label for="m-email">Email</label>
+      <input id="m-email" type="email" autocomplete="off" inputmode="email">
+      <span class="ferr" data-for="email"></span></div>
+    <div class="field"><span class="plabel">What they'll get</span><div class="preview" id="m-preview"></div></div>
+    <div class="warn" id="m-dup" hidden></div>
+    <div class="mbar"><span class="mstatus" id="m-status"></span>
+      <button type="button" id="manual-cancel">Cancel</button>
+      <button type="submit" class="primary" id="m-send">Send email</button></div>
+  </form>
+</aside>
+<div class="page" id="view-activity" hidden>
+  <header class="head">
+    <div>
+      <h1>Activity</h1>
+      <p>Everything the bot did, newest first. Repeated errors are folded into one line.</p>
+    </div>
+    <span class="health" id="health-a"><i></i><span>Checking</span></span>
+  </header>
+  <section class="sec">
+    <div class="feed full" id="act-feed"><div class="empty">Loading</div></div>
+    <div class="more" id="act-more" hidden><button type="button" id="act-older">Show older</button></div>
+  </section>
+</div>
+</div>
+</div>
+<script>
+const $ = (id) => document.getElementById(id);
+const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) =>
+  ({"&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;"}[c]));
+// Under a cent still shows its real size ($0.0013), so tiny AI costs don't read as $0.00.
+const money = (n) => { n = n || 0; return "$" + (n > 0 && n < 0.01 ? n.toPrecision(2) : n.toFixed(2)); };
+const when = (iso) => iso ? new Date(iso).toLocaleString([], {month: "short", day: "numeric",
+  hour: "2-digit", minute: "2-digit"}) : "";
+const ago = (mins) => mins < 1 ? "just now" : mins < 60 ? `${mins}m ago` : mins < 1440 ? `${Math.floor(mins / 60)}h ago`
+  : `${Math.floor(mins / 1440)}d ago`;
+const sinceIso = (iso) => iso ? ago(Math.max(0, Math.floor((Date.now() - new Date(iso)) / 60000))) : "";
+const day = (iso) => new Date(iso + "T00:00:00").toLocaleDateString([], {month: "short", day: "numeric"});
+let editing = false, tab = "emails", last = null;
+
+const ICON = {
+  mail: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="m3 7 9 6 9-6"/></svg>',
+  rate: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19 19 4"/><circle cx="6.5" cy="6.5" r="2.5"/><circle cx="17.5" cy="17.5" r="2.5"/></svg>',
+  flag: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 21V4"/><path d="M5 4h11l-2 4 2 4H5"/></svg>',
+  coin: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M15 9.5c-.5-1-1.6-1.5-3-1.5-1.7 0-3 .8-3 2s1.3 1.7 3 2 3 .8 3 2-1.3 2-3 2c-1.4 0-2.5-.5-3-1.5M12 6v2M12 16v2"/></svg>',
+};
+
+async function post(url, body) {
+  const r = await fetch(url, {method: "POST", headers: {"Content-Type": "application/json"},
+                              body: JSON.stringify(body || {})});
+  if (!r.ok) throw new Error((await r.json().catch(() => ({}))).error || r.statusText);
+}
+
+function stats(s) {
+  const days = s.emails_per_day.map((d) => d.count);
+  const today = days[days.length - 1], yday = days[days.length - 2] || 0;
+  const dmed = s.funnel.reduce((a, f) => a + f.dmed, 0);
+  const gave = s.funnel.reduce((a, f) => a + f.gave_email, 0);
+  const rate = dmed ? Math.round((gave / dmed) * 100) : 0;
+  const flags = s.flags.length;
+  const card = (tint, icon, label, value, cap) => `<div class="stat ${tint}">
+    <div class="top">${ICON[icon]}<span class="label">${label}</span></div>
+    <span class="value num">${value}</span><span class="cap">${cap}</span></div>`;
+  $("stats").innerHTML =
+    card("mint", "mail", "Emails", s.cards.emails, `+${today} today, ${yday} yesterday`) +
+    card("sky", "rate", "DM to email", rate + "%", `${gave} of ${dmed} people DM'd`) +
+    card(flags ? "peach" : "calm", "flag", "Needs you", flags, flags ? "Waiting on you below" : `All clear, ${s.cards.mid_conversation} mid conversation`) +
+    card("lilac", "coin", "AI spend", money(s.spend.total), `${money(s.spend.last_7_days)} last 7 days${s.cards.spend_missing_price ? ", prices not set" : ""}`);
+}
+
+function chart(s) {
+  const em = s.emails_per_day, dm = s.dms_per_day || em.map((d) => ({...d, count: 0}));
+  const n = em.length, w = 1100, h = 260, l = 34, r = 12, t = 14, b = 30;
+  const max = Math.max(1, ...em.map((d) => d.count), ...dm.map((d) => d.count));
+  const step = max <= 4 ? 1 : Math.ceil(max / 4);
+  const top = Math.ceil(max / step) * step;
+  const cw = (w - l - r) / n;
+  const cx = (i) => l + cw * (i + 0.5);
+  const y = (v) => t + (1 - v / top) * (h - t - b);
+  let g = "";
+  for (let v = 0; v <= top; v += step) {
+    g += `<line x1="${l}" x2="${w - r}" y1="${y(v)}" y2="${y(v)}" stroke="var(--line)"></line>
+          <text x="${l - 10}" y="${y(v) + 4}" text-anchor="end">${v}</text>`;
+  }
+  const bars = dm.map((d, i) => d.count ? `<rect x="${cx(i) - cw * 0.3}" y="${y(d.count)}" width="${cw * 0.6}"
+    height="${y(0) - y(d.count)}" rx="5" fill="var(--bar)"></rect>` : "").join("");
+  const pts = em.map((d, i) => `${cx(i).toFixed(1)},${y(d.count).toFixed(1)}`).join(" ");
+  const labels = em.map((d, i) => i % 2 === (n - 1) % 2 ? `<text x="${cx(i)}" y="${h - 8}" text-anchor="middle">${day(d.date)}</text>` : "").join("");
+  const hits = em.map((d, i) => `<rect class="hit" data-i="${i}" x="${l + cw * i}" y="${t}" width="${cw}" height="${h - t - b}" fill="transparent"></rect>`).join("");
+  $("chart").innerHTML = `<svg viewBox="0 0 ${w} ${h}" role="img" aria-label="emails and DMs per day, last 14 days">
+    ${g}${bars}
+    <polygon points="${cx(0)},${y(0)} ${pts} ${cx(n - 1)},${y(0)}" fill="var(--chart-fill)"></polygon>
+    <polyline points="${pts}" fill="none" stroke="var(--chart)" stroke-width="2.2" stroke-linejoin="round" stroke-linecap="round"></polyline>
+    <circle cx="${cx(n - 1)}" cy="${y(em[n - 1].count)}" r="4" fill="var(--chart)"></circle>
+    <line id="guide" x1="0" x2="0" y1="${t}" y2="${y(0)}" stroke="var(--muted)" stroke-dasharray="3 3" visibility="hidden"></line>
+    ${labels}${hits}</svg><div class="tip" id="tip" hidden></div>`;
+  const svg = $("chart").querySelector("svg"), tip = $("tip"), guide = $("guide");
+  svg.querySelectorAll(".hit").forEach((el) => {
+    el.addEventListener("mouseenter", () => {
+      const i = +el.dataset.i, box = svg.getBoundingClientRect(), k = box.width / w;
+      guide.setAttribute("x1", cx(i)); guide.setAttribute("x2", cx(i)); guide.setAttribute("visibility", "visible");
+      tip.innerHTML = `<b>${day(em[i].date)}</b><div><span>Emails</span><span class="num">${em[i].count}</span></div>
+        <div><span>DMs sent</span><span class="num">${dm[i].count}</span></div>`;
+      tip.style.left = Math.min(Math.max(cx(i) * k, 80), box.width - 80) + "px";
+      tip.style.top = (y(Math.max(em[i].count, dm[i].count)) * k - 10) + "px";
+      tip.hidden = false;
+    });
+    el.addEventListener("mouseleave", () => { tip.hidden = true; guide.setAttribute("visibility", "hidden"); });
+  });
+}
+
+function flagRow(f) {
+  const cid = encodeURIComponent(f.cid);
+  const kind = f.email_id !== null ? "mail" : f.kind;
+  const label = kind === "mail" ? "email" : kind === "info" ? "needs info" : "needs you";
+  let actions;
+  if (kind === "mail") {
+    actions = `<button class="primary" data-act="send-now" data-id="${f.email_id}">Send now</button>
+               <button data-act="mark-sent" data-id="${f.email_id}">It already went out</button>`;
+  } else if (kind === "info") {
+    actions = `<input type="email" id="email-${cid}" placeholder="paste their email" aria-label="their email">
+               <button class="primary" data-act="email" data-cid="${cid}">Save and send</button>
+               <button data-act="done" data-cid="${cid}">Done</button>`;
+  } else {
+    actions = `<button class="primary" data-act="done" data-cid="${cid}">Done</button>` +
+      (f.can_carry_on ? `<button data-act="carry-on" data-cid="${cid}">Let the bot carry on</button>` : "");
+  }
+  return `<div class="row item"><div class="rtop"><span class="handle">@${esc(f.handle)}</span>
+      <span class="tag ${kind}">${label}</span><span class="date">${sinceIso(f.since)}</span></div>
+    <div class="reason">${esc(f.reason)}</div>
+    ${f.quote ? `<div class="quote">${esc(f.quote)}</div>` : ""}
+    <div class="todo">${esc(f.todo)}. Find @${esc(f.handle)} in your <a href="${f.thread_url}" target="_blank" rel="noopener">Instagram DMs</a>.</div>
+    <div class="actions">${actions}</div><div class="err"></div></div>`;
+}
+
+function flags(s) {
+  $("flagcount").textContent = s.flags.length;
+  $("flags").innerHTML = s.flags.length ? s.flags.map(flagRow).join("")
+    : `<div class="clear"><i></i>Nothing needs you. The bot is handling everyone.</div>`;
+}
+
+// ---- funnel: one reel at a time, or all of them added up, picked in the card's header
+const FUNNEL_KEY = "igdm.funnel";
+const FSTEPS = ["commented", "dmed", "hand", "replied", "gave_email", "emailed"];
+let funnelPick = "all", funnelOpts = "";
+try { funnelPick = localStorage.getItem(FUNNEL_KEY) || "all"; } catch (e) { /* no storage */ }
+function funnelData(s) {
+  const one = s.funnel.find((f) => f.key === funnelPick);
+  if (one) return one;
+  const sum = {reel: "All reels"};
+  FSTEPS.forEach((k) => { sum[k] = s.funnel.reduce((a, f) => a + f[k], 0); });
+  return sum;
+}
+function funnelPickSet(key) {
+  funnelPick = key;
+  try { localStorage.setItem(FUNNEL_KEY, key); } catch (e) { /* private window */ }
+  if (last) { funnel(last); detail(last); }
+}
+function funnel(s) {
+  const sel = $("funnel-reel");
+  if (!s.funnel.length) {
+    sel.hidden = true;
+    $("funnel").innerHTML = `<div class="empty">No reels in config.toml yet.</div>`;
+    return;
+  }
+  if (funnelPick !== "all" && !s.funnel.some((f) => f.key === funnelPick)) funnelPick = "all";
+  const opts = `<option value="all">All reels</option>` +
+    s.funnel.map((f) => `<option value="${esc(f.key)}">${esc(f.reel)}</option>`).join("");
+  if (opts !== funnelOpts) { sel.innerHTML = opts; funnelOpts = opts; }  // don't close it on a refresh
+  sel.value = funnelPick;
+  sel.hidden = s.funnel.length < 2;
+  const f = funnelData(s);
+  const steps = [["dmed", "First DM"], ["replied", "Replied"], ["gave_email", "Gave email"], ["emailed", "Email sent"]];
+  const top = Math.max(1, f.dmed);
+  $("funnelsub").textContent = `${f.commented} from comments, ${f.hand} from your hand DMs.`;
+  $("funnel").innerHTML = `<div class="ftable"><div class="fhead"><span>Step</span><span class="r">Share</span><span class="r">Count</span></div>` +
+    steps.map(([k, label]) => `<div class="frow"><div class="fname"><span>${label}</span>
+      <div class="bar"><b style="width:${(f[k] / top) * 100}%"></b></div></div>
+      <span class="r share num">${Math.round((f[k] / top) * 100)}%</span><span class="r num">${f[k]}</span></div>`).join("") +
+    `</div>`;
+}
+$("funnel-reel").addEventListener("change", (e) => funnelPickSet(e.target.value));
+
+// ---- By reel: one row per reel, sortable; clicking a row shows that reel's funnel
+let reelSort = {k: "since", dir: -1};
+const rate = (f) => f.dmed ? f.gave_email / f.dmed : 0;
+const REEL_COLS = [
+  ["reel", "Reel", (f) => esc(f.reel), ""],
+  ["since", "Since", (f) => new Date(f.since).toLocaleDateString([], {month: "short", day: "numeric"}), "dim num"],
+  ["commented", "Comments", (f) => f.commented, "num"],
+  ["dmed", "First DMs", (f) => f.dmed, "num"],
+  ["replied", "Replied", (f) => f.replied, "num"],
+  ["gave_email", "Gave email", (f) => f.gave_email, "num"],
+  ["rate", "DM to email", (f) => Math.round(rate(f) * 100) + "%", "num"],
+];
+function byReel(s) {
+  if (!s.funnel.length) return `<div class="empty">No reels in config.toml yet.</div>`;
+  const val = (f, k) => k === "rate" ? rate(f) : k === "reel" ? f.reel.toLowerCase() : f[k];
+  const rows = [...s.funnel].sort((a, b) => {
+    const x = val(a, reelSort.k), y = val(b, reelSort.k);
+    return (x < y ? -1 : x > y ? 1 : 0) * reelSort.dir;
+  });
+  const head = REEL_COLS.map(([k, label]) => {
+    const on = reelSort.k === k;
+    return `<th><button type="button" class="rsort" data-rsort="${k}"${on ? ` aria-sort="${reelSort.dir > 0 ? "ascending" : "descending"}"` : ""}>${label}${on ? (reelSort.dir > 0 ? " ↑" : " ↓") : ""}</button></th>`;
+  }).join("");
+  return `<table><thead><tr>${head}</tr></thead><tbody>` + rows.map((f) =>
+    `<tr data-reel="${esc(f.key)}" class="${f.key === funnelPick ? "picked" : ""}" title="Show this reel's funnel">` +
+    REEL_COLS.map(([, , cell, cls]) => `<td class="${cls}">${cell(f)}</td>`).join("") + `</tr>`).join("") +
+    `</tbody></table>`;
+}
+$("detail").addEventListener("click", (e) => {
+  const h = e.target.closest("[data-rsort]");
+  if (h) {
+    const k = h.dataset.rsort;
+    reelSort = reelSort.k === k ? {k, dir: -reelSort.dir} : {k, dir: k === "reel" ? 1 : -1};
+    if (last) detail(last);
+    return;
+  }
+  const row = e.target.closest("tr[data-reel]");
+  if (row) {
+    funnelPickSet(row.dataset.reel);
+    $("funnel").scrollIntoView({behavior: "smooth", block: "center"});
+  }
+});
+
+function table(rows, cols, empty) {
+  return rows.length ? `<table><thead><tr>${cols.map((c) => `<th>${c[0]}</th>`).join("")}</tr></thead><tbody>` +
+    rows.map((r) => `<tr>${cols.map((c) => `<td class="${c[2] || ""}">${c[1](r)}</td>`).join("")}</tr>`).join("") +
+    `</tbody></table>` : `<div class="empty">${empty}</div>`;
+}
+
+const STATE = {sent: "sent", queued: "sending soon", sending: "sending", manual: "not sent", failed: "failed", unknown: "check Gmail"};
+
+function detail(s) {
+  const nr = [...s.no_reply.bot.map((r) => ({...r, by: "bot"})), ...s.no_reply.hand.map((r) => ({...r, by: "you"}))]
+    .sort((a, b) => a.ago_hours - b.ago_hours);
+  const views = {
+    emails: ["Emails", s.emails.length, () => table(s.emails, [
+      ["Email", (r) => esc(r.email)], ["Instagram", (r) => r.handle ? "@" + esc(r.handle)
+        : r.manual ? `${esc(r.name || "")} <span class="who">added by you</span>` : ""], ["Reel", (r) => esc(r.reel), "dim"],
+      ["Captured", (r) => when(r.captured_at), "dim num"],
+      ["Material", (r) => `<span class="state ${r.state}"><i></i>${r.state === "sent" ? "sent " + when(r.sent_at) : STATE[r.state] || esc(r.state)}</span>`],
+    ], "No emails yet.")],
+    byreel: ["By reel", s.funnel.length, () => byReel(s)],
+    mid: ["Mid conversation", s.mid.length, () => table(s.mid, [
+      ["Instagram", (r) => "@" + esc(r.handle)],
+      ["Last message", (r) => `<span class="who">${r.last_by === "bot" ? "bot" : "them"}</span>${esc(r.last_text)}`],
+      ["When", (r) => ago(r.ago_minutes), "dim num"],
+      ["Reply window left", (r) => `<span class="num ${r.window_left_minutes < 180 ? "soon" : ""}">${Math.floor(r.window_left_minutes / 60)}h ${r.window_left_minutes % 60}m</span>`],
+    ], "Nobody is mid conversation right now.")],
+    noreply: ["No reply yet", nr.length, () => table(nr, [
+      ["Instagram", (r) => "@" + esc(r.handle)], ["First DM from", (r) => r.by === "bot" ? "the bot" : "you, by hand", "dim"],
+      ["Reel", (r) => esc(r.reel), "dim"], ["Sent", (r) => `${r.ago_hours}h ago`, "dim num"],
+    ], "Everyone has replied.")],
+    spend: ["AI spend", s.spend.by_model.length, () => table(s.spend.by_model, [
+      ["Model", (r) => esc(r.model)], ["Calls", (r) => r.calls.toLocaleString(), "num"],
+      ["Tokens in / out", (r) => `${r.input_tokens.toLocaleString()} / ${r.output_tokens.toLocaleString()}`, "dim num"],
+      ["Cost", (r) => r.missing_price ? `<span class="dim">${money(r.usd)}, price not set</span>` : money(r.usd), "num"],
+    ], "No AI calls yet.")],
+    left: ["Left alone", s.left_alone.count, () => table(s.left_alone.items, [
+      ["Instagram", (r) => "@" + esc(r.handle)], ["Comment", (r) => esc(r.text)], ["When", (r) => when(r.at), "dim num"],
+    ], "Jev hasn't skipped any comments.")],
+  };
+  $("tabs").innerHTML = Object.entries(views).map(([k, [label, n]]) =>
+    `<button role="tab" data-tab="${k}" aria-selected="${k === tab}">${label}<span class="n num">${n}</span></button>`).join("");
+  $("detail").innerHTML = views[tab][2]();
+}
+
+function banner(s) {
+  let html = s.ig_blocked_since ? `<div class="banner">Instagram access is blocked since ${when(s.ig_blocked_since)}.
+    Log in to Facebook and finish any verification it asks for. This clears by itself.</div>` : "";
+  if (s.config_error) {
+    const reason = s.config_error.slice(s.config_error.indexOf(" ") + 1);
+    html += `<div class="banner">Your latest change to config.toml wasn't applied, because ${esc(reason)}.
+      The bot is still running on the version before it.</div>`;
+  }
+  $("banner").innerHTML = html;
+}
+
+function render(s) {
+  last = s;
+  banner(s);
+  stats(s); latest(s); chart(s); flags(s); funnel(s); detail(s);
+  $("live").classList.remove("stale");
+  $("updated").textContent = "Updated " + new Date().toLocaleTimeString([], {hour: "2-digit", minute: "2-digit"});
+}
+
+async function load() {
+  if (editing) return;
+  try {
+    const r = await fetch("/api/state");
+    render(await r.json());
+  } catch (e) {
+    $("live").classList.add("stale");
+    $("updated").textContent = "Can't reach the dashboard";
+  }
+}
+
+document.addEventListener("focusin", (e) => { if (e.target.matches("input")) editing = true; });
+document.addEventListener("focusout", (e) => { if (e.target.matches("input")) editing = false; });
+
+document.addEventListener("click", async (e) => {
+  const t = e.target.closest("button[data-tab]");
+  if (t) { tab = t.dataset.tab; if (last) detail(last); return; }
+  const b = e.target.closest("button[data-act]");
+  if (!b) return;
+  const item = b.closest(".item");
+  const err = item.querySelector(".err");
+  const act = b.dataset.act;
+  b.disabled = true;
+  err.textContent = "";
+  try {
+    if (act === "email") {
+      await post(`/api/flags/${b.dataset.cid}/email`, {email: item.querySelector("input[type=email]").value});
+    } else if (b.dataset.cid) {
+      await post(`/api/flags/${b.dataset.cid}/${act}`);
+    } else {
+      await post(`/api/emails/${b.dataset.id}/${act}`);
+    }
+    editing = false;
+    await load();
+  } catch (x) {
+    err.textContent = x.message;
+    b.disabled = false;
+  }
+});
+
+// ---- reels tab
+let reels = null, checkSeq = 0, checkTimer = null, startTouched = false, showAll = false;
+const touched = new Set();
+const GAP = /\[[^\[\]\n]{1,60}\]/g;
+const FIELDS = ["url", "keyword", "offer", "material_url", "email_subject", "email_body",
+                "handle_comments_after", "hand_dm_phrases", "ai_notes", "dm_offer"];
+const plural = (n, one, many) => `${n} ${n === 1 ? one : many}`;
+
+async function postJson(url, body) {
+  const r = await fetch(url, {method: "POST", headers: {"Content-Type": "application/json"},
+                              body: JSON.stringify(body || {})});
+  return {ok: r.ok, status: r.status, body: await r.json().catch(() => ({}))};
+}
+
+async function getReels() {
+  const r = await fetch("/api/reels");
+  const j = await r.json().catch(() => ({}));
+  if (!r.ok) throw new Error(j.error || "couldn't load the reels");
+  reels = j;
+  return j;
+}
+
+async function reelsRoute(h) {
+  const v = $("view-reels");
+  try { await getReels(); } catch (e) { v.innerHTML = `<div class="empty">${esc(e.message)}</div>`; return; }
+  if (h === "reels") return reelsList();
+  const key = decodeURIComponent(h.slice("reels/".length));
+  if (key === "new") return reelEdit(null);
+  if (key.startsWith("new/")) return reelEdit(null, key.slice(4));
+  const r = reels.reels.find((x) => x.key === key);
+  if (!r) { location.hash = "#reels"; return; }
+  reelEdit(r);
+}
+
+function reelsList() {
+  const rows = reels.reels.map((r) => `
+    <div class="reel${r.paused ? " paused" : ""}" data-key="${esc(r.key)}">
+      <div class="rmain">
+        <div class="rtitle"><span class="rname">${esc(r.keyword)}</span>
+          <span class="tag ${r.paused ? "off" : "on"}">${r.paused ? "Paused" : "Live"}</span></div>
+        <div class="rmeta"><span class="num">${plural(r.counts.comments, "comment", "comments")}</span>
+          <span class="num">${plural(r.counts.emails_sent, "email sent", "emails sent")}</span>
+          <a href="${esc(r.url)}" target="_blank" rel="noopener">Open on Instagram</a></div>
+        <div class="ract"><a class="btn" href="#reels/${encodeURIComponent(r.key)}">Edit</a>
+          <a class="btn" href="#reels/new/${encodeURIComponent(r.key)}" title="New reel giving away the same thing">Copy</a>
+          ${r.paused ? `<button type="button" data-reel="resume">Resume</button>`
+                     : `<button type="button" data-reel="ask-pause">Pause</button>`}</div>
+      </div>
+      <div class="warnslot"></div>
+      <div class="err"></div>
+    </div>`).join("");
+  $("view-reels").innerHTML = `
+    <header class="head"><div><h1>Reels</h1>
+      <p>The reels the bot watches for comments. Add one when you post it, or pause one to freeze it.</p></div>
+      <a class="btn primary" href="#reels/new">New reel</a></header>
+    <section class="sec box outline"><div class="rlist">${rows ||
+      `<div class="empty">No reels yet. Add the one you just posted.</div>`}</div></section>`;
+}
+
+function holdText(h) {
+  const parts = [];
+  if (h.mid) parts.push(plural(h.mid, "person mid conversation", "people mid conversation"));
+  if (h.waiting_dm) parts.push(plural(h.waiting_dm, "person waiting for their first DM", "people waiting for their first DM"));
+  if (h.queued_emails) parts.push(plural(h.queued_emails, "queued email", "queued emails"));
+  const list = parts.length > 1 ? parts.slice(0, -1).join(", ") + " and " + parts[parts.length - 1] : parts[0];
+  return (list ? `This will hold ${list}. ` : "") +
+    "Nothing goes out for this reel until you resume, and comments that come in while it's paused are skipped for good. " +
+    "Emails you send yourself with Send now still go out.";
+}
+
+document.addEventListener("click", async (e) => {
+  const b = e.target.closest("button[data-reel]");
+  if (!b) return;
+  const card = b.closest(".reel");
+  const key = card.dataset.key, err = card.querySelector(".err"), slot = card.querySelector(".warnslot");
+  const act = b.dataset.reel;
+  if (act === "cancel") { slot.innerHTML = ""; return; }
+  b.disabled = true;
+  err.textContent = "";
+  try {
+    if (act === "ask-pause") {
+      await getReels();
+      const r = reels.reels.find((x) => x.key === key);
+      slot.innerHTML = `<div class="warn"><div>${esc(holdText(r.hold))}</div>
+        <div class="actions"><button type="button" class="primary" data-reel="pause">Pause reel</button>
+        <button type="button" data-reel="cancel">Cancel</button></div></div>`;
+      b.disabled = false;
+      return;
+    }
+    const res = await postJson(`/api/reels/${encodeURIComponent(key)}/${act}`);
+    if (!res.ok) throw new Error(res.body.error || "that didn't work, try again");
+    await getReels();
+    reelsList();
+  } catch (x) {
+    err.textContent = x.message;
+    b.disabled = false;
+  }
+});
+
+const WHO = {ai: ["Only the AI reads this", "info"], dm: ["Goes in their DM", "you"],
+             email: ["Goes in the email", "mail"], bot: ["Only the bot uses this", "off"]};
+function field(name, label, control, hint, who) {
+  const tag = who ? `<span class="tag ${WHO[who][1]}">${WHO[who][0]}</span>` : "";
+  return `<div class="field"><div class="lrow"><label for="f-${name}">${label}</label>${tag}</div>${control}
+    ${hint ? `<div class="hint">${hint}</div>` : ""}<div class="ferr" id="e-${name}"></div></div>`;
+}
+const COPIED = ["offer", "dm_offer", "material_url", "email_subject", "email_body", "ai_notes"];
+const andList = (xs) => xs.length > 1 ? xs.slice(0, -1).join(", ") + " and " + xs[xs.length - 1] : xs[0] || "";
+
+function emailWhen() {
+  const m = reels.messages, a = m.email_after_seconds;
+  return a ? `Sent ${a[0] === a[1] ? a[0] : `${a[0]} to ${a[1]}`} seconds after the bot DMs them that it's sending it over.`
+           : `Sent about ${plural(m.email_delay_minutes, "minute", "minutes")} after they give their email.`;
+}
+
+// The new reel takes the material, first DM, email and AI notes from reel `src` (or blanks, for none).
+function copyFrom(src) {
+  const el = $("reelform").elements;
+  const blank = {offer: "", dm_offer: "", material_url: "", email_subject: reels.template.subject,
+                 email_body: reels.template.body, ai_notes: ""};
+  const kw = (t) => src ? t.split(`"${src.keyword}"`).join('"{keyword}"') : t;  // "AI" -> "{keyword}"
+  COPIED.forEach((n) => { el[n].value = src ? (n.startsWith("email_") ? kw(src[n]) : src[n] || "") : blank[n];
+                          touched.add(n); });
+  $("copynote").textContent = src ? `Filled in from ${src.keyword}. Change anything you need, it won't touch ` +
+    `the ${src.keyword} reel. Give the email and the AI notes a quick read in case they mention ${src.keyword} ` +
+    `or something that's different this time.` : "";
+  preview();
+  runCheck(null);
+}
+const textInput = (name, val, extra, ph) =>
+  `<input type="text" id="f-${name}" name="${name}" value="${esc(val)}" placeholder="${esc(ph || "")}" autocomplete="off"${extra || ""}>`;
+const area = (name, val, ph) =>
+  `<textarea id="f-${name}" name="${name}" placeholder="${esc(ph || "")}" spellcheck="true">${esc(val)}</textarea>`;
+
+function reelEdit(r, fromKey) {
+  const editing = r ? r.key : null;
+  const v = r || {keyword: "", url: "", offer: "", material_url: "", email_subject: reels.template.subject,
+                  email_body: reels.template.body, handle_comments_after: "", hand_dm_phrases: [], ai_notes: "", dm_offer: ""};
+  const lock = r && r.has_leads ? " readonly" : "";
+  startTouched = !!r;
+  showAll = !!r;
+  touched.clear();
+  ["email_subject", "email_body"].forEach((n) => touched.add(n));
+  const newest = [...reels.reels].sort((a, b) => b.handle_comments_after.localeCompare(a.handle_comments_after));
+  const copyBox = r ? "" : `
+      <section class="sec box shade">
+        <div class="sech"><div><h2>Giving away the same thing as another reel?</h2>
+          <p>Pick that reel and the material, first DM, email and AI notes get filled in for you.
+            You can still change anything before you save.</p></div></div>
+        <div class="field"><label for="f-copy">Same as</label>
+          <select id="f-copy"><option value="">No, this is something new</option>
+            ${newest.map((x) => `<option value="${esc(x.key)}">${esc(x.keyword)}${x.dm_offer ? ` (${esc(x.dm_offer)})` : ""}</option>`).join("")}
+          </select><div class="note" id="copynote"></div></div>
+      </section>`;
+  $("view-reels").innerHTML = `
+    <header class="head"><div><a class="back" href="#reels">Back to reels</a>
+      <h1>${r ? esc(r.keyword) : "New reel"}</h1>
+      <p>${r ? `Key ${esc(r.key)}. Saved changes reach the bot within a minute.`
+             : "Fill in the gaps. The bot starts on this reel within a minute of saving."}</p></div></header>
+    <form id="reelform" class="fgrid" novalidate>${copyBox}
+      <section class="sec box shade">
+        <div class="sech"><div><h2>The reel</h2><p>${lock ? "This reel already has leads, so its link and keyword stay as they are."
+          : "The link from the reel's Share button, and the word people comment to get the material."}</p></div></div>
+        <div class="cols">
+          ${field("url", "Instagram link", textInput("url", v.url, lock, "https://www.instagram.com/reel/..."), "", "bot")}
+          ${field("keyword", "Keyword", textInput("keyword", v.keyword, lock, "IDEAS"),
+                  "The word you ask people to comment. It also goes in the email wherever {keyword} is.", "email")}
+        </div>
+      </section>
+      <section class="sec box shade">
+        <div class="sech"><div><h2>What you're giving</h2><p>What people get, and where it lives.</p></div></div>
+        ${field("offer", "What they get, in plain words",
+                textInput("offer", v.offer, "", "every slide deck from the AI conference, with English versions"),
+                "Nobody sees this. The AI reads it to tell when a comment or reply is asking for the material, " +
+                "and so it knows what it's offering.", "ai")}
+        ${field("dm_offer", "End of the first DM",
+                textInput("dm_offer", v.dm_offer, "", "the free guide") + `<div class="dmprev" id="dmprev"></div>`,
+                "", "dm")}
+        ${field("material_url", "Material link", textInput("material_url", v.material_url, "", "your Google Drive link"),
+                `The Google Drive link. It goes in the email wherever {material_url} is.<div class="note" id="samemat"></div>`,
+                "email")}
+      </section>
+      <section class="sec box shade">
+        <div class="sech"><div><h2>The email</h2><p>${esc(emailWhen())}
+          {name} becomes their first name and {keyword} the keyword.</p></div></div>
+        ${field("email_subject", "Subject", textInput("email_subject", v.email_subject), "", "email")}
+        ${field("email_body", "Body", area("email_body", v.email_body), "", "email")}
+        <div class="gaps" id="gaps"></div>
+        <div class="field"><label>Preview</label><div class="preview" id="preview"></div></div>
+      </section>
+      <details class="box outline"><summary>More: start time, DMs you sent by hand, extra facts for the AI</summary>
+        <div class="fgrid">
+          ${field("handle_comments_after", "Start time",
+                  `<input type="datetime-local" id="f-handle_comments_after" name="handle_comments_after" value="${esc(v.handle_comments_after)}">`,
+                  "Comments from before this are ignored. It starts as when the reel was posted.", "bot")}
+          ${field("hand_dm_phrases", "Phrases from DMs you sent by hand",
+                  area("hand_dm_phrases", (v.hand_dm_phrases || []).join("\n"), "from that reel about"),
+                  "If you DM'd people about this reel yourself, put a phrase from that DM here, one per line. " +
+                  "Once they reply, the bot takes the chat over. Leave it empty if you didn't.", "bot")}
+          ${field("ai_notes", "Extra facts for the AI", area("ai_notes", v.ai_notes),
+                  "True facts the AI may mention when none of the prewritten replies fit. " +
+                  "It writes its own words, so nobody sees this as it is.", "ai")}
+        </div>
+      </details>
+      <div class="formbar"><span class="err" id="formerr"></span>
+        <a class="btn" href="#reels">Cancel</a>
+        <button class="primary" type="submit" id="save" disabled>Save reel</button></div>
+    </form>`;
+  const f = $("reelform");
+  f.addEventListener("input", (e) => {
+    if (e.target.id === "f-copy") return;
+    touched.add(e.target.name);
+    if (e.target.name === "handle_comments_after") startTouched = true;
+    $("save").disabled = true;
+    preview();
+    clearTimeout(checkTimer);
+    checkTimer = setTimeout(() => runCheck(editing), 500);
+  });
+  f.addEventListener("submit", (e) => { e.preventDefault(); saveReel(editing); });
+  const pick = $("f-copy");
+  if (pick) {
+    pick.addEventListener("change", () => copyFrom(reels.reels.find((x) => x.key === pick.value)));
+    const src = fromKey && reels.reels.find((x) => x.key === fromKey);
+    if (src) { pick.value = src.key; copyFrom(src); return; }
+  }
+  preview();
+  runCheck(editing);
+}
+
+function formValues() {
+  const el = $("reelform").elements;
+  const out = {};
+  FIELDS.forEach((n) => { out[n] = el[n].value; });
+  out.hand_dm_phrases = out.hand_dm_phrases.split("\n");
+  return out;
+}
+
+function preview() {
+  const v = formValues();
+  const fill = (t) => esc(t).replace(/\{name\}/g, "Sam")
+    .replace(/\{keyword\}/g, esc(v.keyword || "your keyword"))
+    .replace(/\{material_url\}/g, esc(v.material_url || "your material link"))
+    .replace(GAP, (g) => `<mark>${g}</mark>`);
+  $("preview").innerHTML = `<b>${fill(v.email_subject)}</b>\n\n${fill(v.email_body)}`;
+  const dm1 = reels.messages.dm1, offer = v.dm_offer.trim() || "the material";
+  $("dmprev").innerHTML = esc(dm1).replace(/\{name\}/g, "Sam").replace(/\{keyword\}/g, esc(v.keyword || "your keyword"))
+    .replace(/\{offer\}/g, `<b>${esc(offer)}</b>`) +
+    (dm1.includes("{offer}") ? "" : `<div class="hint">Your first DM doesn't use this right now.</div>`);
+  const gaps = [...new Set([...(v.email_subject.match(GAP) || []), ...(v.email_body.match(GAP) || [])])];
+  $("gaps").textContent = gaps.length ? "Still to fill in: " + gaps.join(", ") : "";
+}
+
+function showErrors(errs) {
+  let hidden = 0;
+  FIELDS.forEach((n) => {
+    const show = showAll || touched.has(n);
+    $("e-" + n).textContent = show ? (errs[n] || "") : "";
+    if (!show && errs[n]) hidden++;
+  });
+  $("formerr").textContent = errs.key || (hidden ? "Fill in the rest of the form to save." : "");
+}
+
+async function runCheck(editing) {
+  const seq = ++checkSeq;
+  const res = await postJson("/api/reels/check", {...formValues(), editing});
+  if (seq !== checkSeq || !$("reelform")) return;  // a newer check is on its way, or the form is gone
+  if (!res.ok) { $("formerr").textContent = res.body.error || "couldn't check the form"; return; }
+  showErrors(res.body.errors);
+  const same = res.body.same_material || [];
+  $("samemat").textContent = same.length ? `Same material as ${andList(same)}. Anyone who already got it from ` +
+    `${same.length > 1 ? "those reels" : "that reel"} won't be messaged again.` : "";
+  const start = $("reelform").elements.handle_comments_after;
+  if (!editing && !startTouched && res.body.posted_at) start.value = res.body.posted_at;
+  $("save").disabled = Object.keys(res.body.errors).length > 0;
+}
+
+async function saveReel(editing) {
+  $("save").disabled = true;
+  const url = editing ? `/api/reels/${encodeURIComponent(editing)}/save` : "/api/reels/new";
+  const res = await postJson(url, formValues());
+  if (res.ok) { location.hash = "#reels"; return; }
+  showAll = true;
+  if (res.body.errors) showErrors(res.body.errors);
+  else $("formerr").textContent = res.body.error || "couldn't save, try again";
+}
+
+// ---- activity feed
+const A_ICON = {
+  dm: '<path d="M21 3 10 14"/><path d="m21 3-7 18-4-7-7-4z"/>',
+  dm_reply: '<path d="M21 12a8 8 0 0 1-11.6 7.1L4 20l1.1-4.5A8 8 0 1 1 21 12z"/>',
+  public_reply: '<path d="M4 5h16v11H9l-5 4z"/><path d="M8 9.5h8M8 12.5h5"/>',
+  email_captured: '<circle cx="12" cy="12" r="4"/><path d="M16 8v5a3 3 0 0 0 6 0v-1a10 10 0 1 0-4 8"/>',
+  email_sent: '<rect x="3" y="5" width="18" height="14" rx="2"/><path d="m3 7 9 6 9-6"/>',
+  flagged: '<path d="M5 21V4"/><path d="M5 4h11l-2 4 2 4H5"/>',
+  error: '<path d="M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z"/><path d="M12 9v4M12 17h.01"/>',
+};
+const svg = (d) => `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">${d}</svg>`;
+const clock = (iso) => new Date(iso).toLocaleTimeString([], {hour: "numeric", minute: "2-digit"});
+const sameDay = (a, b) => a.toDateString() === b.toDateString();
+function dayName(iso) {
+  const d = new Date(iso), now = new Date(), y = new Date(now - 864e5);
+  return sameDay(d, now) ? "Today" : sameDay(d, y) ? "Yesterday"
+    : d.toLocaleDateString([], {weekday: "short", month: "short", day: "numeric"});
+}
+function actRow(i) {
+  const kind = i.type === "error" ? (i.level === "warn" ? "warn" : "error") : i.type;
+  const who = i.handle ? `<span class="for">@${esc(i.handle)}</span>` : "";
+  const reel = i.reel ? `<span class="tag off">${esc(i.reel)}</span>` : "";
+  const times = i.count > 1
+    ? `<span class="times">${i.count} times, ${sameDay(new Date(i.first_at), new Date(i.at)) ? clock(i.first_at)
+        : when(i.first_at)} to ${clock(i.at)}</span>` : "";
+  return `<div class="act ${i.type === "error" ? "error" : ""}">
+    <div class="ic k-${kind}">${svg(A_ICON[i.type] || A_ICON.error)}</div>
+    <div class="body"><div class="line"><span class="what">${esc(i.title)}</span>${who}${reel}</div>
+      ${i.detail ? `<div class="det" title="${esc(i.raw || i.detail)}">${esc(i.detail)}</div>` : ""}${times}</div>
+    <span class="ago" title="${esc(when(i.at))}">${sinceIso(i.at)}</span></div>`;
+}
+function health(id, h) {
+  const el = $(id);
+  if (!el || !h) return;
+  const text = h.state === "ok" ? `Working, last check ${sinceIso(h.last_check)}`
+    : h.state === "trouble" ? `Last check hit a problem (${h.error.toLowerCase()})`
+    : h.state === "stopped" ? `The bot hasn't checked in since ${when(h.last_check)}`
+    : "Waiting for the bot's first check";
+  el.className = "health " + h.state;
+  el.querySelector("span").textContent = text;
+}
+function latest(s) {
+  const a = s.activity;
+  if (!a) return;
+  health("health-o", a.health);
+  $("latest-feed").innerHTML = a.items.length ? a.items.map(actRow).join("")
+    : `<div class="empty">Nothing yet. Actions show up here as the bot takes them.</div>`;
+}
+let act = {items: [], next: null, more: false, pages: 0, busy: false};
+function actRender() {
+  let html = "", lastDay = "";
+  for (const i of act.items) {
+    const d = dayName(i.at);
+    if (d !== lastDay) { html += `<div class="dayh">${esc(d)}</div>`; lastDay = d; }
+    html += actRow(i);
+  }
+  $("act-feed").innerHTML = html || `<div class="empty">Nothing yet. Actions show up here as the bot takes them.</div>`;
+  $("act-more").hidden = !act.more;
+}
+async function actLoad(older) {
+  if (act.busy) return;
+  act.busy = true;
+  $("act-older").disabled = true;
+  try {
+    const q = older && act.next ? `?before=${encodeURIComponent(act.next)}` : "";
+    const r = await (await fetch("/api/activity" + q)).json();
+    act.items = older ? act.items.concat(r.items) : r.items;
+    act.next = r.next; act.more = r.more; act.pages = older ? act.pages + 1 : 1;
+    health("health-a", r.health);
+    actRender();
+  } catch (e) {
+    if (!act.items.length) $("act-feed").innerHTML = `<div class="empty">Can't reach the dashboard</div>`;
+  } finally {
+    act.busy = false;
+    $("act-older").disabled = false;
+  }
+}
+$("act-older").addEventListener("click", () => actLoad(true));
+const activityOpen = () => !$("view-activity").hidden;
+// The open tab refreshes with the rest of the page, unless you've paged back through older actions.
+setInterval(() => { if (activityOpen() && act.pages <= 1) actLoad(false); }, 60000);
+
+// ---- send material by hand
+const manual = {timer: null, poll: null, force: false};
+function manualOpen(open) {
+  $("manual").hidden = !open;
+  $("manual-back").hidden = !open;
+  if (!open) { clearInterval(manual.poll); editing = false; $("manual-open").focus(); return; }
+  const opts = (last && last.reel_options) || [];
+  const sel = $("m-reel"), keep = sel.value;
+  sel.innerHTML = opts.map((r) => `<option value="${esc(r.key)}">${esc(r.keyword)}</option>`).join("");
+  sel.value = opts.some((r) => r.key === keep) ? keep : (opts.length ? opts[opts.length - 1].key : "");
+  manualPreview();
+  $("m-name").focus();
+}
+function manualReset() {
+  ["m-name", "m-handle", "m-email"].forEach((id) => { $(id).value = ""; });
+  manualErrors({});
+  $("m-dup").hidden = true;
+  manual.force = false;
+  manualPreview();
+}
+function manualErrors(errs) {
+  document.querySelectorAll("#manual .ferr").forEach((el) => { el.textContent = errs[el.dataset.for] || ""; });
+}
+function manualStatus(text, cls) {
+  const el = $("m-status");
+  el.textContent = text;
+  el.className = "mstatus " + (cls || "");
+}
+async function manualPreview() {
+  const reel = $("m-reel").value;
+  if (!reel) { $("m-preview").textContent = "Add a reel on the Reels tab first."; return; }
+  const res = await postJson("/api/emails/preview", {name: $("m-name").value, reel});
+  $("m-preview").innerHTML = res.ok ? `<b>${esc(res.body.subject)}</b>${esc(res.body.body)}`
+    : esc(res.body.error || "couldn't show the preview");
+}
+function manualPreviewSoon() { clearTimeout(manual.timer); manual.timer = setTimeout(manualPreview, 250); }
+async function manualSend() {
+  manualErrors({});
+  $("m-dup").hidden = true;
+  $("m-send").disabled = true;
+  manualStatus("");
+  const form = {name: $("m-name").value, handle: $("m-handle").value, reel: $("m-reel").value,
+                email: $("m-email").value, force: manual.force};
+  let res;
+  try { res = await postJson("/api/emails/manual", form); }
+  catch (e) { manualStatus("Can't reach the dashboard."); $("m-send").disabled = false; return; }
+  if (res.status === 409 && res.body.duplicate) {
+    const d = res.body.duplicate, past = d.state === "sent" ? `on ${when(d.at)}` : "already (it's on its way)";
+    $("m-dup").innerHTML = `${esc(d.email)} got this reel's material ${esc(past)}.
+      <div><button type="button" id="m-again">Send it again anyway</button></div>`;
+    $("m-dup").hidden = false;
+    $("m-send").disabled = false;
+    return;
+  }
+  if (!res.ok) {
+    manualErrors(res.body.errors || {});
+    if (!res.body.errors) manualStatus(res.body.error || "Couldn't send, try again.");
+    $("m-send").disabled = false;
+    return;
+  }
+  manualStatus("Sending…", "wait");
+  const id = res.body.id, started = Date.now(), to = form.email.trim();
+  clearInterval(manual.poll);
+  manual.poll = setInterval(async () => {
+    let s;
+    try { s = await (await fetch(`/api/emails/${id}`)).json(); } catch (e) { return; }
+    const done = (text, cls) => { clearInterval(manual.poll); manualStatus(text, cls); $("m-send").disabled = false; load(); };
+    if (s.state === "sent") { done(`Sent to ${to} at ${clock(s.sent_at)}.`, "ok"); manualReset(); }
+    else if (s.state === "failed") done(`Gmail refused it (${s.error || "no reason given"}). It's in your Emails list.`);
+    else if (s.state === "unknown") done("Gmail didn't answer, so check your Sent folder before trying again.");
+    else if (Date.now() - started > 40000) done("Queued. It goes out as soon as the bot is running.", "wait");
+  }, 2000);
+}
+$("manual-open").addEventListener("click", () => manualOpen(true));
+$("manual-close").addEventListener("click", () => manualOpen(false));
+$("manual-cancel").addEventListener("click", () => manualOpen(false));
+$("manual-back").addEventListener("click", () => manualOpen(false));
+document.addEventListener("keydown", (e) => { if (e.key === "Escape" && !$("manual").hidden) manualOpen(false); });
+$("m-name").addEventListener("input", manualPreviewSoon);
+$("m-reel").addEventListener("change", manualPreview);
+$("manual-form").addEventListener("submit", (e) => { e.preventDefault(); manual.force = false; manualSend(); });
+$("m-dup").addEventListener("click", (e) => { if (e.target.id === "m-again") { manual.force = true; manualSend(); } });
+
+// ---- sidebar and views
+const NARROW = window.matchMedia("(max-width: 720px)");
+function sideOpen(open, save) {
+  $("side").classList.toggle("open", open);
+  $("side-toggle").setAttribute("aria-expanded", String(open));
+  if (save) { try { localStorage.setItem("igdm.sidebar", open ? "open" : "closed"); } catch (e) { /* private window */ } }
+}
+function sideInit() {
+  let open = true;
+  try { const v = localStorage.getItem("igdm.sidebar"); if (v) open = v === "open"; } catch (e) { /* no storage */ }
+  sideOpen(NARROW.matches ? false : open, false);
+}
+$("side-toggle").addEventListener("click", () => sideOpen(!$("side").classList.contains("open"), !NARROW.matches));
+document.querySelectorAll("#side .nav").forEach((a) => a.addEventListener("click", () => { if (NARROW.matches) sideOpen(false, false); }));
+
+function route() {
+  const h = location.hash.slice(1) || "overview";
+  const view = h === "reels" || h.startsWith("reels/") ? "reels" : h === "activity" ? "activity" : "overview";
+  $("view-overview").hidden = view !== "overview";
+  $("view-reels").hidden = view !== "reels";
+  $("view-activity").hidden = view !== "activity";
+  if (view === "activity") actLoad(false);
+  document.querySelectorAll("#side .nav").forEach((a) => {
+    if (a.getAttribute("href") === "#" + view) a.setAttribute("aria-current", "page");
+    else a.removeAttribute("aria-current");
+  });
+  if (view === "reels" && typeof reelsRoute === "function") reelsRoute(h);
+  window.scrollTo(0, 0);
+}
+window.addEventListener("hashchange", route);
+
+sideInit();
+route();
+load();
+setInterval(load, 60000);
+</script>
+</body>
+</html>

@@ -1,0 +1,20 @@
+# The bot (igdm run). Starts only once data/LIVE_HERE exists, which only scripts/cutover.sh
+# creates: so a reboot or a deploy before the move can never start a second bot.
+[Unit]
+Description=igdm bot (Instagram comment to DM)
+After=network-online.target
+Wants=network-online.target
+ConditionPathExists=/home/igdm/app/data/LIVE_HERE
+
+[Service]
+Type=simple
+User=igdm
+WorkingDirectory=/home/igdm/app
+ExecStart=/home/igdm/.local/bin/uv run --frozen --project /home/igdm/app igdm run
+Restart=always
+RestartSec=30
+KillSignal=SIGTERM
+TimeoutStopSec=60
+
+[Install]
+WantedBy=multi-user.target

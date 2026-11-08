@@ -1,0 +1,261 @@
+# Your settings. Copy this file to config.toml and change what you need.
+# Lines starting with # are notes for you; the bot ignores them.
+
+# Which settings format this file uses. Leave it alone: `uv run igdm upgrade` changes it for you.
+config_version = 2
+
+# Your timezone, like "Australia/Sydney" or "America/New_York". Times in this file use it.
+timezone = "UTC"
+# How often (in seconds) the bot looks for new comments.
+poll_seconds = 60
+# "full" answers comments and chats. "public_only" only replies to comments, for while
+# you wait on Meta app review.
+mode = "full"
+# Where the bot keeps its records.
+db_path = "data/igdm.sqlite"
+# "facebook_login" is the setup new Meta apps use. "instagram_login" is the older one.
+api = "facebook_login"
+# facebook_login only: send DMs as the Facebook Page ("page") or as the Instagram account ("ig").
+messaging_node = "page"
+
+[owner]
+# Your name. The AI replies are written as you, and the emails are signed with it.
+name = "Your name"
+# A few words about you, so the AI knows who it's writing as. For example "a baker who posts recipes".
+about = ""
+# How you write, in one line. The AI copies this when it writes a reply.
+style = "casual and short, like texting a friend. everyday words, no big words."
+
+[jev]
+# The checker that spots people asking for your material (needs TYPESAFE_API_KEY in .env).
+# Without that key, OpenAI does the job instead.
+model = "jev-latest"
+# How sure the checker must be before the bot treats a comment as a request (0 to 1).
+comment_threshold = 0.8
+# The same, for replies people send in a chat.
+reply_threshold = 0.8
+# The OpenAI model that spots requests when there's no TYPESAFE_API_KEY.
+fallback_model = "gpt-6-luna"
+# Below this chance of being a real email address, a typed address is flagged for you (0 to 1).
+email_threshold = 0.5
+
+[pacing]
+# Seconds to wait between a comment and the first DM: [shortest, longest].
+dm_delay_seconds = [50, 70]
+# Seconds to wait before the public reply to a comment.
+public_reply_delay_seconds = [5, 10]
+# Seconds between the messages of one conversation.
+followup_gap_seconds = [4, 12]
+# Seconds between people when the bot is catching up on a backlog of comments.
+backlog_gap_seconds = [60, 180]
+# The most DMs the bot sends in one hour.
+max_dms_per_hour = 25
+# A window with no Instagram messages at all, in your timezone. The same start and end means
+# there is no quiet window. For example ["02:00", "08:30"] pauses messages overnight.
+quiet_hours = ["00:00", "00:00"]
+# Seconds to wait after someone writes before answering, in case they're still typing.
+reply_settle_seconds = 90
+# Chatting: someone who answers within chat_window_seconds of the bot's last message is
+# chatting. Their conversation is checked every chat_poll_seconds for chat_watch_seconds
+# after the bot's last message, and they're answered chat_settle_seconds after they write.
+chat_window_seconds = 120
+chat_poll_seconds = [10, 15]
+chat_watch_seconds = 180
+chat_settle_seconds = 5
+# Minutes to wait for an email address before the bot stops waiting.
+email_wait_minutes = 30
+# Instagram only lets the bot answer a comment privately for about 7 days (167 hours).
+private_reply_max_age_hours = 167
+
+[email]
+# Turn this off if you only want DMs and no emails.
+enabled = true
+# The Gmail address the material is sent from.
+from_address = "you@gmail.com"
+# The name people see on the email.
+from_name = "Your name"
+# When no "got it" DM goes out (or someone pastes their email), send the email this many minutes
+# after the address comes in.
+delay_minutes = 2
+# Normally the email goes out this many seconds after the "got it" DM: [shortest, longest].
+after_got_it_seconds = [20, 30]
+# The email server's port. 587 works from home and from cloud servers.
+smtp_port = 587
+
+[messages]
+# The first DM asks for the email straight away. {offer} is each reel's dm_offer.
+# To ask "do you still want it?" first instead, set ask_email_first = false and use
+# dm1 = "hey {name}, you commented {keyword} on my reel. do you still want the material?"
+ask_email_first = true
+# The first DM. You can use {name}, {keyword} and {offer}.
+dm1 = "hey 👋 just drop your email and i'll send you {offer}"
+# Sent instead of dm1 when the bot already has this person's email from before. You can use {name}, {keyword} and {offer}.
+repeat_dm1 = "hey 👋 can i send the {keyword} stuff to the same email as before?"
+# If they say yes before giving an email, the bot sends these two messages.
+followup_1 = "glad to share it, instagram just won't let me send files in dms."
+followup_2 = "Can I send it to your email instead?"
+# Short public replies under the comment. The bot picks one at random.
+public_replies = [
+  "check dms", "I'll send it thru", "sent a message to you",
+  "check your dms", "just dmed you", "sent you a dm", "dm'd you", "in your dms now",
+  "sent it your way, check dms", "check ur dms", "just messaged you", "messaged you",
+  "sent you a msg", "have a look in your dms", "sent 📩", "dms 👀", "check your messages",
+  "just sent it thru to your dms", "all sent, check dms",
+  "dropped you a message", "sliding into your dms now", "check your inbox on here",
+  "sent!", "on its way, check dms", "just hit you up in dms", "sent you a msg just now",
+  "in your inbox", "sent it over", "just sent you a message",
+  "have a look at your dms", "dmed 🙌", "messaged you just now", "check your dm requests",
+  "sent you something in dms", "just shot you a dm", "check messages", "done, check dms",
+]
+# Sent when they give their email, just before the email goes out. The bot picks one at random.
+got_it = [
+  "thank you! let me get this sent over now", "thanks! sending it over now 🙌",
+  "perfect, thank you! sending it through now",
+]
+# Sent once the email has actually gone out. {email} is their address.
+sent_dm = [
+  "just sent it to {email}, check your spam if you don't see it :)",
+  "sent it over to {email}! check your spam if you don't see it :)",
+  "all sent to {email}, check your spam if you don't see it :)",
+]
+# The email for reels that don't have their own email_subject and email_body.
+# You can use {name}, {keyword} and {material_url}.
+email_subject = "the {keyword} guide you asked for"
+email_body = """Hey {name},
+
+Here's the guide you commented "{keyword}" on my reel for 👇
+
+{material_url}
+
+Enjoy, and let me know what you think!
+
+Your name"""  # sign-off: use the same name as [owner] name (setup fills it in)
+
+[llm]
+# The AI that writes a reply when nothing in the reply bank fits.
+# It needs OPENAI_API_KEY (or GEMINI_API_KEY) in .env.
+provider = "openai"   # or "gemini"
+model = "gpt-6-luna"  # for gemini, for example "gemini-3.8-flash"
+
+[replies]
+# The AI reply step: answers people who write back instead of giving an email.
+# Read the wording below and make it sound like you before turning this on.
+enabled = false
+# Asked for the email this many times with nothing back: flag it for you.
+max_asks = 3
+# AI-written replies per conversation before it flags it for you instead.
+max_llm_replies = 2
+# AI-written replies containing any of these are rewritten once, then flagged.
+deny_words = [
+  "delve", "certainly", "absolutely", "i'd be happy to", "happy to help", "great question",
+  "resources", "valuable", "assist", "kindly", "furthermore", "feel free", "don't hesitate",
+  "rest assured", "i hope this helps",
+]
+
+# Prewritten replies. The checker picks the one that fits what they wrote. If nothing fits,
+# the AI writes one.
+# stage: "offer" = before the email ask, "asked" = after it, "any" = both.
+# reels: only for these reel keys (leave it out to use it for every reel).
+
+[[replies.bank]]
+id = "yes"
+stage = "offer"
+when = "They want it: yes, sure, please, send it over, a thumbs up."
+# uses followup_1 and followup_2 from [messages]
+
+[[replies.bank]]
+id = "free"
+stage = "any"
+when = "They ask if it's free, what the catch is, or whether they need to pay."
+replies = [
+  "yes it's free, no catch. what's your email and i'll send it through?",
+  "all free, just send me your email and i'll get it over to you",
+]
+
+[[replies.bank]]
+id = "later"
+stage = "any"
+when = "They say they'll do it later, are busy right now, or will send their email soon."
+replies = [
+  "no rush, whenever you're ready just send your email here and i'll send it over",
+]
+
+[[replies.bank]]
+id = "thanks"
+stage = "any"
+when = "They just say thanks or thank you, without an email."
+replies = [
+  "no worries! just need your email and i'll send it through",
+  "all good, send me your email and i'll get it over to you",
+]
+
+[[replies.bank]]
+id = "asked_yes"
+stage = "asked"
+when = "They agree to email (sure, ok, yeah) but haven't typed an email address yet."
+replies = [
+  "perfect, what's the best email to send it to?",
+  "great, what email should i send it to?",
+]
+
+[[replies.bank]]
+id = "wrong_format"
+stage = "asked"
+when = "What they sent looks like a broken or partial email address, like a name without the @ part."
+replies = [
+  "think that got cut off, can you send the full email?",
+  "hmm that email doesn't look complete, can you send it again?",
+]
+
+[[replies.bank]]
+id = "why_email"
+stage = "any"
+when = "They ask why you need their email, or why you can't just send it here in the DMs, without saying no."
+replies = [
+  "instagram won't let me send files in dms, so email is easiest. what's your email so i can get it to you?",
+]
+
+# Prices for the dashboard's AI spend (USD), from github.com/simonw/llm-prices (data/*.json),
+# checked 4 Nov 2026. A model without a price shows its usage as "no price set".
+# Changing a price fixes past totals too.
+[prices."gpt-6-luna"]
+per_m_input = 0.10   # per million input tokens (prompts under 272k tokens)
+per_m_output = 0.50  # per million output tokens
+
+# Jev 1.13 is $0.042 per million input tokens and free output, but Jev's API doesn't report
+# token counts, so this is an estimate per call: about 2,000 tokens a call, rounded up.
+[prices."jev-latest"]
+per_call = 0.0001
+
+# One [[reels]] block per reel. Copy the block to add another.
+[[reels]]
+# A short name for this reel. Each reel's key must be different.
+key = "first"
+# The link to the reel on Instagram.
+url = "https://www.instagram.com/reel/YOUR_REEL/"
+# The word people comment to get the material.
+keyword = "GUIDE"
+# What you give away, said in full. The AI uses it when it writes a reply.
+offer = "my free guide"
+# The same thing in a few words, to finish the first DM: "just drop your email and i'll send you ...".
+dm_offer = "the guide"
+# The link people get in the email (a Drive, Dropbox or website link).
+material_url = "https://example.com/your-material"
+# The bot answers only comments written after this time (your timezone). It stops the bot
+# replying to old comments you've already dealt with yourself.
+handle_comments_after = "2026-01-01T00:00:00"
+# Optional: text that appears in DMs you sent by hand, so the bot leaves those chats to you.
+# hand_dm_phrases = ["from that reel about the guide"]
+# Optional: extra true facts the AI may mention when it writes a reply for this reel.
+# ai_notes = "There is also a short checklist included with the guide."
+# This reel's email. Leave both out to use the one in [messages].
+email_subject = "the {keyword} guide you asked for"
+email_body = """Hey {name},
+
+Here's the guide you commented "{keyword}" on my reel for 👇
+
+{material_url}
+
+Enjoy, and let me know what you think!
+
+Your name"""  # sign-off: use the same name as [owner] name (setup fills it in)

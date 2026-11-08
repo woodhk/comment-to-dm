@@ -1,0 +1,8 @@
+[Unit]
+Description=igdm nightly backup (database and config.toml)
+ConditionPathExists=/home/igdm/app/data/LIVE_HERE
+
+[Service]
+Type=oneshot
+User=igdm
+ExecStart=/home/igdm/app/deploy/backup.sh

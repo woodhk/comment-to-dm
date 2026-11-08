@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <key>Label</key>
+    <string>__LABEL__</string>
+    <key>ProgramArguments</key>
+    <array>
+        <string>/bin/bash</string>
+        <string>__HOME__/.igdm/pull_backups.sh</string>
+    </array>
+    <key>WorkingDirectory</key>
+    <string>__HOME__</string>
+    <!-- every hour the Mac is awake; does nothing quietly when the server can't be reached -->
+    <key>StartInterval</key>
+    <integer>3600</integer>
+    <key>RunAtLoad</key>
+    <true/>
+    <key>StandardOutPath</key>
+    <string>__HOME__/.igdm/backup-pull.log</string>
+    <key>StandardErrorPath</key>
+    <string>__HOME__/.igdm/backup-pull.log</string>
+</dict>
+</plist>
