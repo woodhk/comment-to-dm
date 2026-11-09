@@ -19,6 +19,19 @@ The flow looks like this.
 
 It uses only Instagram's official API, so your account is not at risk from unofficial tools. It runs on your Mac, or on a small cloud server if you want it on all day.
 
+## Your dashboard
+
+You get your own private dashboard. It shows every email you have collected, what the bot did most recently, who needs a reply from you, and what the AI has cost you so far. The numbers in these pictures are made up for the demo.
+
+![The dashboard overview: emails collected, DM to email rate, people who need you, AI spend, latest activity and a chart of emails per day](assets/dashboard.png)
+
+Add a new reel for the bot to watch in under a minute, and see your follower milestones and posting streaks.
+
+<p>
+  <img src="assets/new-reel.png" width="49%" alt="The New reel form: paste the reel link, pick the keyword and what you are giving away">
+  <img src="assets/milestones.png" width="49%" alt="The Milestones page: follower goals reached and weekly posting streaks">
+</p>
+
 ## What it costs you
 
 The code is free, and so is the licence. There is no monthly subscription to Make.com, ManyChat or anything like it.
