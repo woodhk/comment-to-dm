@@ -115,6 +115,8 @@ about coffee.
 > It works! Your bot just sent its first real DM to a follower, all by itself, in your words.
 > From now on it looks after everyone who comments your keyword, and you only need to check the
 > "Needs you" part of the dashboard now and then.
+>
+> If this saved you time, you can buy Alex a coffee: https://buymeacoffee.com/alexwoodyai
 
 Update the note to `"12-run-always": "running, first real DM celebrated"`, so it's never said
 again. Then, on a Mac, offer chapter 13 ("you can close your laptop and the bot keeps going"),

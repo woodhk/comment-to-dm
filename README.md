@@ -57,3 +57,7 @@ When there is a new version, tell Claude `update my bot`. Claude works out where
 ## Made by Alex Wood
 
 I built this bot for my own reels and shared it with you. You can find me on Instagram at [@alexwood.j](https://www.instagram.com/alexwood.j/).
+
+## If this saved you time
+
+If the bot saved you time, you can buy me a coffee at https://buymeacoffee.com/alexwoodyai. It is never required, and the bot works just the same without it.
