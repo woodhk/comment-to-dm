@@ -1,5 +1,7 @@
 # comment-to-dm
 
+![comment-to-dm: a comment on your reel becomes a friendly DM, then an email with your free material](assets/hero.png)
+
 A free bot that answers the people who comment on your Instagram reels.
 
 ## What it does
