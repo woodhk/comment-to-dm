@@ -136,3 +136,18 @@ def test_missing_usage_is_zero():
     c = make(replying({"true": 0.9, "false": 0.1}))
     c.comment_wants_material("hi", REEL)
     assert c.last_usage == (0, 0)
+
+
+def test_cheeky_uses_the_same_question_as_jev():
+    from igdm.jev import CHEEKY_INSTRUCTIONS
+    seen = {}
+    c = make(replying({"true": 0.8, "false": 0.2}, seen))
+    assert c.comment_is_cheeky("tokyo you clown", REEL) == pytest.approx(0.8)
+    assert CHEEKY_INSTRUCTIONS in system_text(seen)
+    user = next(m["content"] for m in seen["body"]["input"] if m["role"] == "user")
+    assert json.loads(user)["comment"] == "tokyo you clown"
+
+
+def test_cheeky_polite_comment_low():
+    c = make(replying({"true": 0.05, "false": 0.95}))
+    assert c.comment_is_cheeky("tokyo please!", REEL) == pytest.approx(0.05)

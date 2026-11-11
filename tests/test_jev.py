@@ -158,3 +158,34 @@ def test_route_uses_owner_name():
     make(handler).route_reply([], "x", {"yes": "a"})
     q = seen["body"]["questions"]["route"]
     assert q["instructions"].startswith("Sam offered someone free material from their Instagram reel")
+
+
+def test_cheeky_request_and_result():
+    seen = {}
+
+    def h(req):
+        seen["body"] = json.loads(req.content)
+        return httpx.Response(200, json={"answers": {"cheeky": {"type": "noul", "noul": 0.97}}})
+
+    from igdm.jev import CHEEKY_INSTRUCTIONS
+    assert make(h).comment_is_cheeky("tokyo. also you're a fraud lol", REEL) == 0.97
+    b = seen["body"]
+    q = b["questions"]["cheeky"]
+    assert q["type"] == "noul" and q["instructions"] == CHEEKY_INSTRUCTIONS
+    assert set(q["criteria"]) == {"true", "false"}
+    assert b["state"]["comment"] == "tokyo. also you're a fraud lol"
+    assert 'Comment "TOKYO"' in b["state"]["reel"]["call_to_action"]
+
+
+def test_cheeky_bad_value_raises():
+    def h(req):
+        return httpx.Response(200, json={"answers": {"cheeky": {"type": "noul", "noul": "high"}}})
+
+    with pytest.raises(JevError):
+        make(h).comment_is_cheeky("x", REEL)
+
+
+def test_cheeky_instructions_cover_the_cases():
+    from igdm.jev import CHEEKY_INSTRUCTIONS as s
+    for words in ("insult", "mock", "slur", "joke", "instructions", "unrelated", "emphasis"):
+        assert words in s

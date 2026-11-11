@@ -9,6 +9,8 @@ import httpx
 
 from igdm.config import ReelConfig
 from igdm.jev import (
+    CHEEKY_CRITERIA,
+    CHEEKY_INSTRUCTIONS,
     COMMENT_CRITERIA,
     COMMENT_INSTRUCTIONS,
     EMAIL_CRITERIA,
@@ -18,6 +20,7 @@ from igdm.jev import (
     INTENT_KEYS,
     JevError,
     _num,
+    comment_state,
     route_instructions,
 )
 from igdm.llm import OPENAI_URL, LlmError, output_text
@@ -93,14 +96,13 @@ class OpenAIClassifier:
         return {k: v / total for k, v in values.items()}
 
     def comment_wants_material(self, comment_text: str, reel: ReelConfig) -> float:
-        state = {
-            "reel": {
-                "call_to_action": f'Comment "{reel.keyword}" and I\'ll DM it to you',
-                "offer": reel.offer,
-            },
-            "comment": comment_text,
-        }
-        return self._ask(state, COMMENT_INSTRUCTIONS, COMMENT_CRITERIA)["true"]
+        return self._ask(comment_state(comment_text, reel), COMMENT_INSTRUCTIONS,
+                         COMMENT_CRITERIA)["true"]
+
+    def comment_is_cheeky(self, comment_text: str, reel: ReelConfig) -> float:
+        """The chance the comment adds an insult, a joke, bot instructions or an unrelated ask."""
+        return self._ask(comment_state(comment_text, reel), CHEEKY_INSTRUCTIONS,
+                         CHEEKY_CRITERIA)["true"]
 
     def email_looks_real(self, email: str, their_message: str) -> float:
         """The chance the address is one they really use (low for jokes and placeholders)."""

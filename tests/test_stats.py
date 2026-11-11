@@ -223,3 +223,21 @@ def test_hand_added_email_never_counts_a_person_twice(db, cfg):
 def test_hand_added_email_only_counts_for_its_own_reel(db, cfg):
     manual(db, cfg, "", "other@x.com", keyword="Other")
     assert counts(db, cfg)["gave_email"] == 0
+
+
+def test_cheeky_comment_is_a_flag_with_a_link_to_the_reel(db, cfg):
+    req(db, "x", Status.LEFT_FOR_OWNER, flag_reason="the keyword came with an insult, a joke or an unrelated ask",
+        flag_todo="reply to the comment yourself if you want, or leave it")
+    req(db, "y", Status.LEFT_FOR_OWNER)
+    s = state(db, cfg)
+    (f,) = s["flags"]
+    assert f["handle"] == "x" and f["kind"] == "you" and "insult" in f["reason"]
+    assert f["quote"] == "Tokyo" and f["on_reel"] == cfg.reels[0].url
+    assert f["can_carry_on"] is False
+    assert s["left_alone"]["count"] == 2
+
+
+def test_dm_flags_have_no_reel_link(db, cfg):
+    req(db, "b", Status.AWAITING_YES)
+    db.flag("b", "you", "not about the material", "reply yourself")
+    assert state(db, cfg)["flags"][0]["on_reel"] is None

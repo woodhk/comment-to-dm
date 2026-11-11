@@ -24,7 +24,7 @@ import re
 
 from igdm.activity import activity
 from igdm.config import Config, load_config
-from igdm.db import FOR_OWNER, Database
+from igdm.db import FOR_OWNER, Database, Status
 from igdm.instagram import Media
 from igdm.messages import find_email
 from igdm.milestones import milestones_state
@@ -236,7 +236,9 @@ def _handler(live: _Live, find_media: Callable[[str], Media | None] | None,
                 return
             if req.status not in FOR_OWNER:
                 raise _Refused(409, "this isn't flagged any more")
-            if action == "done":
+            if action == "done" and req.status == Status.LEFT_FOR_OWNER:
+                db.dismiss_flag(cid)  # stays left alone, so a later real request still gets its DM
+            elif action == "done":
                 db.mark_done(cid, _now())
             elif action == "email":
                 email = find_email(str(self._body().get("email", "")).strip())

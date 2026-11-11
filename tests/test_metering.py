@@ -114,3 +114,12 @@ def test_metered_openai_classifier_logs_provider_and_tokens(db):
     (row,) = db.usage_rows()
     assert (row["provider"], row["model"], row["purpose"]) == ("openai", "gpt-6-luna", "comment")
     assert (row["input_tokens"], row["output_tokens"]) == (120, 8)
+
+
+def test_metered_cheeky_logged_as_its_own_purpose(db):
+    inner = FakeClassifier()
+    inner.cheeky_probs["Tokyo clown"] = 0.9
+    inner.model = "jev-latest"
+    m = MeteredClassifier(inner, db)
+    assert m.comment_is_cheeky("Tokyo clown", repo_config().reels[0]) == 0.9
+    assert [r["purpose"] for r in db.usage_rows()] == ["cheeky"]

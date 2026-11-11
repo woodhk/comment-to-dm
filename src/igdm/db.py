@@ -439,6 +439,10 @@ class Database:
                     flag_reason=None, flag_todo=None)
         return email_id
 
+    def dismiss_flag(self, cid: str) -> None:
+        """Take a flagged comment off the dashboard without changing its status."""
+        self.update(cid, flag_reason=None, flag_todo=None, note="dismissed by you on the dashboard")
+
     def mark_done(self, cid: str, now: datetime) -> None:
         self.update(cid, status=Status.DONE_BY_OWNER, note="done by you on the dashboard")
 

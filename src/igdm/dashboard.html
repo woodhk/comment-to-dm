@@ -589,7 +589,9 @@ function flagRow(f) {
       <span class="tag ${kind}">${label}</span><span class="date">${sinceIso(f.since)}</span></div>
     <div class="reason">${esc(f.reason)}</div>
     ${f.quote ? `<div class="quote">${esc(f.quote)}</div>` : ""}
-    <div class="todo">${esc(f.todo)}. Find @${esc(f.handle)} in your <a href="${f.thread_url}" target="_blank" rel="noopener">Instagram DMs</a>.</div>
+    <div class="todo">${esc(f.todo)}. ${f.on_reel
+      ? `Find @${esc(f.handle)}'s comment on your <a href="${f.on_reel}" target="_blank" rel="noopener">reel</a>.`
+      : `Find @${esc(f.handle)} in your <a href="${f.thread_url}" target="_blank" rel="noopener">Instagram DMs</a>.`}</div>
     <div class="actions">${actions}</div><div class="err"></div></div>`;
 }
 

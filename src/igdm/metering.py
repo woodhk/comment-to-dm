@@ -36,6 +36,11 @@ class MeteredClassifier:
         self._log("comment")
         return v
 
+    def comment_is_cheeky(self, comment_text, reel):
+        v = self._inner.comment_is_cheeky(comment_text, reel)
+        self._log("cheeky")
+        return v
+
     def reply_intent(self, bot_message, reply_text):
         v = self._inner.reply_intent(bot_message, reply_text)
         self._log("intent")

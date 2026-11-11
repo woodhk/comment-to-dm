@@ -207,11 +207,12 @@ class FakeClassifier:
 
     FakeClassifier(comment_probs, reply_probs, default_comment=0.0)
     - comment_wants_material(text, reel) -> comment_probs.get(text, default_comment)
+    - comment_is_cheeky(text, reel) -> cheeky_probs.get(text, 0.0) (polite unless set).
     - reply_intent(bot_message, reply_text) -> reply_probs[reply_text] (a copy), or
       {"yes": 0, "no": 0, "other": 1} when the reply text is unknown.
     - email_looks_real(email, their_message) -> email_probs.get(email, 1.0) (real unless set).
     - Texts in `.raise_on` raise JevError (comment text, reply text or email address).
-    - `.calls` records ("comment", text) / ("reply", reply_text) / ("email", email).
+    - `.calls` records ("comment", text) / ("cheeky", text) / ("reply", reply_text) / ("email", email).
     """
 
     def __init__(self, comment_probs=None, reply_probs=None, default_comment: float = 0.0):
@@ -222,6 +223,7 @@ class FakeClassifier:
         self.calls: list[tuple[str, str]] = []
         self.route_probs: dict[str, dict[str, float]] = {}
         self.email_probs: dict[str, float] = {}
+        self.cheeky_probs: dict[str, float] = {}
         self.route_options: list[dict[str, str]] = []
         self.route_threads: list[list[dict[str, str]]] = []
 
@@ -230,6 +232,12 @@ class FakeClassifier:
         if comment_text in self.raise_on:
             raise JevError("fake jev failure")
         return self.comment_probs.get(comment_text, self.default_comment)
+
+    def comment_is_cheeky(self, comment_text: str, reel) -> float:
+        self.calls.append(("cheeky", comment_text))
+        if comment_text in self.raise_on:
+            raise JevError("fake jev failure")
+        return self.cheeky_probs.get(comment_text, 0.0)
 
     def reply_intent(self, bot_message: str, reply_text: str) -> dict[str, float]:
         self.calls.append(("reply", reply_text))

@@ -232,3 +232,21 @@ def test_no_extra_hosts_by_default(app):
 
 def test_localhost_still_allowed_with_extra_hosts(ts_app):
     assert httpx.get(ts_app + "/").status_code == 200
+
+
+def test_done_on_a_flagged_comment_keeps_it_left_alone(app):
+    base, db = app
+    db.insert_request(Request(
+        comment_id="c9", reel_key="tokyo", media_id="m1", username="troll", commenter_id=None,
+        text="Tokyo you clown", commented_at=datetime(2026, 11, 3, tzinfo=timezone.utc),
+        status=Status.LEFT_FOR_OWNER, flag_reason="the keyword came with an insult",
+        flag_todo="leave it"))
+    assert any(f["handle"] == "troll" for f in httpx.get(base + "/api/state").json()["flags"])
+    assert httpx.post(f"{base}/api/flags/c9/done").status_code == 200
+    r = db.get("c9")
+    assert r.status is Status.LEFT_FOR_OWNER and r.flag_reason is None
+    assert not any(f["handle"] == "troll" for f in httpx.get(base + "/api/state").json()["flags"])
+
+
+def test_page_links_flagged_comments_to_the_reel():
+    assert "comment on your" in PAGE.read_text() and "f.on_reel" in PAGE.read_text()

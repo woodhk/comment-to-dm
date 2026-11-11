@@ -15,6 +15,7 @@ CARD_STATUSES = (Status.NEEDS_INFO, Status.NEEDS_OWNER, Status.MANUAL_DM_NEEDED,
                  Status.WINDOW_EXPIRED, Status.EXPIRED)
 NOT_COMMENTS = (Status.PRE_CUTOFF, Status.LEFT_FOR_OWNER, Status.PAUSED_SKIPPED)
 DEFAULTS = {
+    Status.LEFT_FOR_OWNER: ("left alone", "reply to the comment yourself if you want"),
     Status.NEEDS_OWNER: ("needs you", "check the thread and reply yourself"),
     Status.NEEDS_INFO: ("needs their email", "find their email and paste it below"),
     Status.MANUAL_DM_NEEDED: ("couldn't DM them automatically", "DM them yourself"),
@@ -40,6 +41,11 @@ def _reel_name(cfg: Config, key: str) -> str:
     return r.keyword if r else key
 
 
+def _reel_url(cfg: Config, key: str) -> str:
+    r = next((r for r in cfg.reels if r.key == key), None)
+    return r.url if r else INBOX_URL
+
+
 def _updated(db: Database, cid: str) -> datetime | None:
     row = db.rows("SELECT updated_at FROM requests WHERE comment_id=?", (cid,))
     return _dec(row[0]["updated_at"]) if row and row[0]["updated_at"] else None
@@ -54,6 +60,7 @@ def _flag_card(db: Database, cfg: Config, r: Request) -> dict[str, Any]:
         "reason": r.flag_reason or r.note or reason, "todo": r.flag_todo or todo,
         "quote": r.last_their_text or (r.text if r.kind != "hand" else None),
         "thread_url": INBOX_URL, "can_carry_on": r.paused_from in LIVE,
+        "on_reel": _reel_url(cfg, r.reel_key) if r.status == Status.LEFT_FOR_OWNER else None,
         "since": _iso(_updated(db, r.comment_id)),
     }
 
@@ -248,12 +255,13 @@ def reels_state(db: Database, cfg: Config) -> dict[str, Any]:
 
 def dashboard_state(db: Database, cfg: Config, now: datetime) -> dict[str, Any]:
     emails = db.emails()
-    flags = [_flag_card(db, cfg, r) for r in db.with_status(*CARD_STATUSES)]
+    left = db.with_status(Status.LEFT_FOR_OWNER)
+    flagged = db.with_status(*CARD_STATUSES) + [r for r in left if r.flag_reason]
+    flags = [_flag_card(db, cfg, r) for r in flagged]
     flags += [_email_card(e) for e in emails if e.send_state in EMAIL_FLAGS]
     flags.sort(key=lambda f: f["since"] or "", reverse=True)
     mid = _mid(db, cfg, now)
     spend = _spend(db, cfg, now)
-    left = db.with_status(Status.LEFT_FOR_OWNER)
     return {
         "now": now.isoformat(),
         "ig_blocked_since": db.kv_get("ig_access_blocked_since") or None,

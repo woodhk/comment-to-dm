@@ -5,6 +5,7 @@ from __future__ import annotations
 import json
 import logging
 import random
+import re
 from dataclasses import dataclass, field
 from datetime import datetime, timedelta
 from typing import Any, Callable
@@ -44,6 +45,9 @@ UNEXPECTED_PAUSE = timedelta(hours=1)  # no DM 1 after a send that may have gone
 UNANSWERED_DM1_BLOCK = timedelta(hours=24)  # an unanswered DM 1 younger than this blocks a new one
 OWNER_HANDLING = frozenset({Status.NEEDS_OWNER, Status.HANDLED_BY_OWNER})
 OWNER_HANDLING_NOTE = "you're already handling this person"
+CHEEKY_THRESHOLD = 0.5  # comment_is_cheeky at or above this: no DM, flagged for the owner
+CHEEKY_REASON = "the keyword came with an insult, a joke or an unrelated ask"
+CHEEKY_TODO = "reply to the comment yourself if you want, or leave it"
 RECENT_PUBLIC_REPLIES = 10
 IG_BLOCKED_KEY = "ig_access_blocked_since"  # ISO UTC while Meta blocks the app, "" when fine
 IG_OK_KEY = "ig_ok_at"  # ISO UTC of the latest successful Instagram check (alerts read it)
@@ -145,6 +149,12 @@ def _is_own(ctx: Context, c: Comment) -> bool:
     return c.from_id is not None and c.from_id == ctx.own_id
 
 
+def has_keyword(text: str, keyword: str) -> bool:
+    """The keyword appears as a word of its own, in any case."""
+    k = keyword.strip().casefold()
+    return bool(k) and re.search(rf"(?<!\w){re.escape(k)}(?!\w)", text.casefold()) is not None
+
+
 def _intake_one(ctx: Context, reel: ReelConfig, media_id: str, c: Comment) -> bool:
     """Classify and store one new comment. Returns False if it wasn't stored."""
     db = ctx.db
@@ -157,8 +167,11 @@ def _intake_one(ctx: Context, reel: ReelConfig, media_id: str, c: Comment) -> bo
         db.insert_request(req)
         return True
 
+    cheeky = 0.0
     try:
         req.jev_yes = ctx.jev.comment_wants_material(c.text, reel)
+        if req.jev_yes >= ctx.config.comment_threshold or has_keyword(c.text, reel.keyword):
+            cheeky = ctx.jev.comment_is_cheeky(c.text, reel)
     except JevError as e:
         log.warning("jev failed on comment %s (retry next tick): %s", c.id, e)
         db.log_event(c.id, "jev_error", str(e))
@@ -166,7 +179,10 @@ def _intake_one(ctx: Context, reel: ReelConfig, media_id: str, c: Comment) -> bo
 
     now = ctx.now()
     p = ctx.config.pacing
-    if req.jev_yes < ctx.config.comment_threshold:
+    if cheeky >= CHEEKY_THRESHOLD:  # no DM and no public reply; the owner sees it flagged
+        req.status = Status.LEFT_FOR_OWNER
+        req.flag_reason, req.flag_todo = CHEEKY_REASON, CHEEKY_TODO
+    elif req.jev_yes < ctx.config.comment_threshold:
         req.status = Status.LEFT_FOR_OWNER
     elif any(  # one offer per material: the same reel, or another reel with the same link
         o.comment_id != c.id
@@ -182,7 +198,10 @@ def _intake_one(ctx: Context, reel: ReelConfig, media_id: str, c: Comment) -> bo
         req.dm_due_at = dm_due_at(c.timestamp, p.dm_delay_seconds, ctx.rng)
         req.kind = "repeat" if db.latest_email_for(c.username) else "normal"
     db.insert_request(req)
-    log.info("comment %s by @%s -> %s", c.id, c.username, req.status)
+    if req.flag_reason:  # shows as "Handed to you" in the dashboard's activity
+        db.log_event(c.id, f"status:{Status.QUEUED}->{Status.LEFT_FOR_OWNER}")
+    log.info("comment %s by @%s -> %s%s", c.id, c.username, req.status,
+             " (flagged: cheeky)" if req.flag_reason else "")
     return True
 
 
